@@ -2,10 +2,11 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
-## [Unreleased]
+## [0.1.0] - 2026-11-14
 ### Added
-* Project scaffolding and architecture documentation.
-* Native Swift Package configuration targeting macOS 13+.
-* Build and packaging script for standalone .app creation.
-* Dynamic CGVirtualDisplay engine with multi-resolution presets.
-* ScreenCaptureKit stream viewer with Picture-in-Picture window.
+* Dynamic CGVirtualDisplay engine supporting 1600x900, 1080p, and 1440p presets.
+* ScreenCaptureKit stream receiver using zero-copy IOSurface frames.
+* Picture-in-Picture floating window with GPU aspect-fit downscaling and full-screen toggle.
+* NSStatusBar menu bar interface with dynamic state display and hotkey triggers.
+* Emergency panic reset hotkey (Option + Command + Control + R) for teardown and ColorSync restore.
+* Build script with ad-hoc signing producing standalone ZenDisp.app bundle.
