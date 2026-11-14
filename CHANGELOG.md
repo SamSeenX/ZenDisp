@@ -2,6 +2,12 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.2.2] - 2026-11-14
+### Fixed
+* Fixed TCC permission loop by binding ad-hoc code signature directly to designated requirement identifier "com.samseen.ZenDisp".
+* Added NSScreenCaptureUsageDescription to Info.plist.
+* Updated build pipeline to install directly into /Applications/ZenDisp.app and strip Gatekeeper quarantine attributes (xattr -cr) to eliminate App Translocation.
+
 ## [0.2.1] - 2026-11-14
 ### Fixed
 * Added preflight checks (CGPreflightScreenCaptureAccess and AXIsProcessTrusted) to prevent repetitive authorization prompts on launch once granted.
