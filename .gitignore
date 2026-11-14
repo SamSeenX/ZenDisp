@@ -1,0 +1,8 @@
+.DS_Store
+.build/
+Packages/
+*.xcodeproj
+*.xcworkspace
+ZenDisp.app/
+build/
+.swiftpm/
