@@ -10,6 +10,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         setupStatusItem()
         setupMenu()
         setupPanicHotkey()
+        requestSystemPermissions()
+    }
+    
+    private func requestSystemPermissions() {
+        if #available(macOS 11.0, *) {
+            _ = CGRequestScreenCaptureAccess()
+        }
+        let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(opts)
     }
     
     private func setupStatusItem() {
@@ -76,6 +85,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         
         statusMenu.addItem(NSMenuItem.separator())
         
+        let permItem = NSMenuItem(title: "Check System Permissions...", action: #selector(checkPermissionsMenu), keyEquivalent: "")
+        permItem.target = self
+        statusMenu.addItem(permItem)
+        
         let panicItem = NSMenuItem(title: "Panic Reset All (⌥⌘⌃R)", action: #selector(panicReset), keyEquivalent: "r")
         panicItem.keyEquivalentModifierMask = [.option, .command, .control]
         panicItem.target = self
@@ -131,6 +144,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     
     @objc private func toggleFullScreen() {
         StreamWindowController.shared.toggleFullScreen()
+    }
+    
+    @objc private func checkPermissionsMenu() {
+        requestSystemPermissions()
     }
     
     @objc private func panicReset() {

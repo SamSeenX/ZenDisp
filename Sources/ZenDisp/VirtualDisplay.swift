@@ -1,34 +1,6 @@
 import Cocoa
 import CoreGraphics
 
-@objc protocol VirtualDisplayModeProtocol: NSObjectProtocol {
-    init(width: UInt, height: UInt, refreshRate: Double)
-}
-
-@objc protocol VirtualDisplaySettingsProtocol: NSObjectProtocol {
-    init()
-    var modes: [Any] { get set }
-    var hiDPI: UInt32 { get set }
-}
-
-@objc protocol VirtualDisplayDescriptorProtocol: NSObjectProtocol {
-    init()
-    var name: String { get set }
-    var maxPixelsWide: UInt32 { get set }
-    var maxPixelsHigh: UInt32 { get set }
-    var sizeInMillimeters: CGSize { get set }
-    var serialNum: UInt32 { get set }
-    var productID: UInt32 { get set }
-    var vendorID: UInt32 { get set }
-    var queue: DispatchQueue { get set }
-}
-
-@objc protocol VirtualDisplayProtocol: NSObjectProtocol {
-    init(descriptor: AnyObject)
-    func applySettings(_ settings: AnyObject) -> Bool
-    var displayID: CGDirectDisplayID { get }
-}
-
 public struct DisplayPreset {
     public let width: UInt
     public let height: UInt
@@ -65,43 +37,71 @@ public final class VirtualDisplayManager {
         }
         
         serialCounter += 1
-        let descriptor = (descClass.init() as AnyObject) as! VirtualDisplayDescriptorProtocol
-        descriptor.name = "ZenDisp \(preset.name)"
-        descriptor.maxPixelsWide = UInt32(preset.width)
-        descriptor.maxPixelsHigh = UInt32(preset.height)
-        descriptor.sizeInMillimeters = CGSize(
-            width: Double(preset.width) * 25.4 / 110.0,
-            height: Double(preset.height) * 25.4 / 110.0
+        let descriptor = descClass.init()
+        descriptor.setValue("ZenDisp \(preset.name)", forKey: "name")
+        descriptor.setValue(UInt32(preset.width), forKey: "maxPixelsWide")
+        descriptor.setValue(UInt32(preset.height), forKey: "maxPixelsHigh")
+        descriptor.setValue(
+            NSValue(size: NSSize(width: Double(preset.width) * 25.4 / 110.0, height: Double(preset.height) * 25.4 / 110.0)),
+            forKey: "sizeInMillimeters"
         )
-        descriptor.serialNum = serialCounter
-        descriptor.productID = 0x5a44
-        descriptor.vendorID = 0x5353
-        descriptor.queue = DispatchQueue.main
+        descriptor.setValue(serialCounter, forKey: "serialNum")
+        descriptor.setValue(UInt32(0x5a44), forKey: "productID")
+        descriptor.setValue(UInt32(0x5353), forKey: "vendorID")
+        descriptor.setValue(DispatchQueue.main, forKey: "queue")
         
-        let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject
-        _ = modeClass.instanceMethod(for: NSSelectorFromString("initWithWidth:height:refreshRate:"))
-        
-        let invocation = unsafeBitCast(
-            modeClass.instanceMethod(for: NSSelectorFromString("initWithWidth:height:refreshRate:")),
+        guard let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject? else {
+            return false
+        }
+        let modeInitSel = NSSelectorFromString("initWithWidth:height:refreshRate:")
+        guard let modeMethod = modeClass.instanceMethod(for: modeInitSel) else {
+            return false
+        }
+        let modeInitFn = unsafeBitCast(
+            modeMethod,
             to: (@convention(c) (AnyObject, Selector, UInt, UInt, Double) -> AnyObject).self
         )
-        let initializedMode = invocation(modeAlloc, NSSelectorFromString("initWithWidth:height:refreshRate:"), preset.width, preset.height, preset.refreshRate)
+        let mode = modeInitFn(modeAlloc, modeInitSel, preset.width, preset.height, preset.refreshRate)
         
-        let settings = (settingsClass.init() as AnyObject) as! VirtualDisplaySettingsProtocol
-        settings.modes = [initializedMode]
-        settings.hiDPI = 1
+        let settings = settingsClass.init()
+        settings.setValue([mode], forKey: "modes")
+        settings.setValue(UInt32(1), forKey: "hiDPI")
         
-        let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject
-        let displayInit = unsafeBitCast(
-            displayClass.instanceMethod(for: NSSelectorFromString("initWithDescriptor:")),
+        guard let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject? else {
+            return false
+        }
+        let displayInitSel = NSSelectorFromString("initWithDescriptor:")
+        guard let displayMethod = displayClass.instanceMethod(for: displayInitSel) else {
+            return false
+        }
+        let displayInitFn = unsafeBitCast(
+            displayMethod,
             to: (@convention(c) (AnyObject, Selector, AnyObject) -> AnyObject).self
         )
-        let displayInstance = displayInit(displayAlloc, NSSelectorFromString("initWithDescriptor:"), descriptor as AnyObject)
+        let displayInstance = displayInitFn(displayAlloc, displayInitSel, descriptor)
         
-        let displayObj = displayInstance as! VirtualDisplayProtocol
-        _ = displayObj.applySettings(settings as AnyObject)
+        let applySel = NSSelectorFromString("applySettings:")
+        guard let applyMethod = displayClass.instanceMethod(for: applySel) else {
+            return false
+        }
+        let applyFn = unsafeBitCast(
+            applyMethod,
+            to: (@convention(c) (AnyObject, Selector, AnyObject) -> Bool).self
+        )
+        let applied = applyFn(displayInstance, applySel, settings)
+        guard applied else {
+            return false
+        }
         
-        let id = displayObj.displayID
+        let displayIDSel = NSSelectorFromString("displayID")
+        guard let displayIDMethod = displayClass.instanceMethod(for: displayIDSel) else {
+            return false
+        }
+        let displayIDFn = unsafeBitCast(
+            displayIDMethod,
+            to: (@convention(c) (AnyObject, Selector) -> CGDirectDisplayID).self
+        )
+        let id = displayIDFn(displayInstance, displayIDSel)
         guard id != 0 else {
             teardownDisplay()
             return false
