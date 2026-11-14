@@ -21,7 +21,7 @@ cp "$PROJECT_DIR/.build/release/ZenDisp" "$MACOS_DIR/ZenDisp"
 chmod +x "$MACOS_DIR/ZenDisp"
 cp "$PROJECT_DIR/Info.plist" "$CONTENTS_DIR/Info.plist"
 
-echo "==> Applying ad-hoc codesign..."
-codesign --force --deep --sign - "$APP_DIR"
+echo "==> Applying ad-hoc codesign with stable identifier..."
+codesign --force --deep --sign - --identifier "com.samseen.ZenDisp" "$APP_DIR"
 
 echo "==> ZenDisp.app build complete at $APP_DIR"

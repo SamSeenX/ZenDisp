@@ -2,6 +2,12 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.2.1] - 2026-11-14
+### Fixed
+* Added preflight checks (CGPreflightScreenCaptureAccess and AXIsProcessTrusted) to prevent repetitive authorization prompts on launch once granted.
+* Applied stable bundle identifier (com.samseen.ZenDisp) during ad-hoc codesigning to preserve macOS TCC permissions across builds.
+* Refactored menu creation in AppDelegate to keep source files under 150 lines.
+
 ## [0.2.0] - 2026-11-14
 ### Added
 * Enabled live mouse cursor capture on the PiP stream via ScreenCaptureKit.
