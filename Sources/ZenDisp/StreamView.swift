@@ -7,6 +7,11 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
     private var stream: SCStream?
     private var isStreaming = false
     private let renderLayer = CALayer()
+    private var targetDisplayID: CGDirectDisplayID?
+    
+    public override var isFlipped: Bool {
+        return true
+    }
     
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -27,6 +32,7 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
     
     public func startCapture(displayID: CGDirectDisplayID, completion: @escaping (Bool) -> Void) {
         stopCapture()
+        self.targetDisplayID = displayID
         
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { [weak self] content, error in
             guard let self = self, let content = content, error == nil else {
@@ -45,7 +51,7 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
             config.height = targetDisplay.height
             config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
             config.queueDepth = 3
-            config.showsCursor = false
+            config.showsCursor = true
             config.pixelFormat = kCVPixelFormatType_32BGRA
             
             do {
@@ -73,9 +79,36 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
         stream.stopCapture { _ in }
         self.stream = nil
         self.isStreaming = false
+        self.targetDisplayID = nil
         DispatchQueue.main.async {
             self.renderLayer.contents = nil
         }
+    }
+    
+    public override func mouseDown(with event: NSEvent) {
+        guard let id = targetDisplayID else { super.mouseDown(with: event); return }
+        let location = convert(event.locationInWindow, from: nil)
+        InputForwarder.shared.forwardClick(localPoint: location, viewSize: bounds.size, displayID: id, button: .left)
+    }
+    
+    public override func rightMouseDown(with event: NSEvent) {
+        guard let id = targetDisplayID else { super.rightMouseDown(with: event); return }
+        let location = convert(event.locationInWindow, from: nil)
+        InputForwarder.shared.forwardClick(localPoint: location, viewSize: bounds.size, displayID: id, button: .right)
+    }
+    
+    public override func mouseDragged(with event: NSEvent) {
+        guard let id = targetDisplayID else { super.mouseDragged(with: event); return }
+        let location = convert(event.locationInWindow, from: nil)
+        InputForwarder.shared.forwardDrag(localPoint: location, viewSize: bounds.size, displayID: id)
+    }
+    
+    public override func scrollWheel(with event: NSEvent) {
+        guard let id = targetDisplayID else { super.scrollWheel(with: event); return }
+        let location = convert(event.locationInWindow, from: nil)
+        let dY = Int32(event.scrollingDeltaY * 4)
+        let dX = Int32(event.scrollingDeltaX * 4)
+        InputForwarder.shared.forwardScroll(localPoint: location, viewSize: bounds.size, displayID: id, deltaY: dY, deltaX: dX)
     }
     
     public func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {

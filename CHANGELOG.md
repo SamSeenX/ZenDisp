@@ -2,6 +2,12 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.2.0] - 2026-11-14
+### Added
+* Enabled live mouse cursor capture on the PiP stream via ScreenCaptureKit.
+* Implemented direct mouse click and drag forwarding in InputForwarder, translating local window coordinates to the virtual display global coordinate space.
+* Added support for left click, right click, dragging, and scroll wheel directly inside the PiP stream window.
+
 ## [0.1.1] - 2026-11-14
 ### Fixed
 * Replaced Swift protocol casting with native Key-Value Coding and direct C function pointers to resolve SIGABRT abort during virtual display instantiation.
