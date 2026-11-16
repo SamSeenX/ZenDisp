@@ -62,7 +62,8 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
             }
             addItem(menu, title: "Save Current Layout as Preset...", action: #selector(saveLayoutAction))
             addItem(menu, title: "Teardown All Displays", action: #selector(teardownAllAction), key: "t")
-            addItem(menu, title: "Release Cursor to Main Screen (⌃⎋)", action: #selector(releaseCursor), key: "\u{1b}")
+            let rel = addItem(menu, title: "Release Cursor to Main Screen", action: #selector(releaseCursor), key: "\u{1b}")
+            rel.keyEquivalentModifierMask = [.control]
             menu.addItem(NSMenuItem.separator())
         }
         
@@ -93,6 +94,12 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
         addItem(menu, title: "Quit ZenDisp", action: #selector(quitApp), key: "q")
     }
     
+    public func showMenuUnder(_ button: NSStatusBarButton) {
+        let menu = NSMenu()
+        buildMenu(menu)
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
+    }
+    
     @objc private func setActiveScaleAction(_ sender: NSMenuItem) {
         guard let arr = sender.representedObject as? [Any],
               let id = arr[0] as? CGDirectDisplayID,
@@ -111,22 +118,7 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
     }
     
     @objc private func saveLayoutAction() {
-        let alert = NSAlert()
-        alert.messageText = "Save Workspace Layout"
-        alert.informativeText = "Enter a name for this multi-display preset:"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
-        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
-        input.stringValue = "Workspace Layout \(PresetManager.shared.layoutGroups.count + 1)"
-        alert.accessoryView = input
-        alert.window.initialFirstResponder = input
-        
-        NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn {
-            let name = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !name.isEmpty { PresetManager.shared.saveCurrentLayout(name: name) }
-        }
+        MenuPopoverController.shared.promptSaveLayout()
     }
     
     @objc private func spawnPresetAction(_ sender: NSMenuItem) {

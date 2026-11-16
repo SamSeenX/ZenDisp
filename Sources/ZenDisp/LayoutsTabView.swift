@@ -58,13 +58,22 @@ public final class LayoutsTabView: NSView {
             sub.frame = NSRect(x: 52, y: 34, width: 300, height: 18)
             card.addSubview(sub)
             
-            let btn = NSButton(title: "Launch Layout", target: self, action: #selector(launchGroupFromBtn(_:)))
+            let btn = NSButton(title: "Launch", target: self, action: #selector(launchGroupFromBtn(_:)))
             btn.bezelStyle = .rounded
             btn.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
             btn.imagePosition = .imageLeading
             btn.tag = index
-            btn.frame = NSRect(x: 360, y: 16, width: 145, height: 32)
+            btn.frame = NSRect(x: 320, y: 16, width: 105, height: 32)
             card.addSubview(btn)
+            
+            let delBtn = NSButton(title: "Delete", target: self, action: #selector(deleteGroupFromBtn(_:)))
+            delBtn.bezelStyle = .rounded
+            delBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
+            delBtn.imagePosition = .imageLeading
+            delBtn.tag = index
+            delBtn.frame = NSRect(x: 430, y: 16, width: 78, height: 32)
+            delBtn.isEnabled = index >= 2
+            card.addSubview(delBtn)
             
             addSubview(card)
             yPos += 74
@@ -75,6 +84,13 @@ public final class LayoutsTabView: NSView {
         let groups = PresetManager.shared.layoutGroups
         if sender.tag >= 0 && sender.tag < groups.count {
             VirtualDisplayManager.shared.launchGroup(groups[sender.tag])
+        }
+    }
+    
+    @objc private func deleteGroupFromBtn(_ sender: NSButton) {
+        let groups = PresetManager.shared.layoutGroups
+        if sender.tag >= 0 && sender.tag < groups.count {
+            PresetManager.shared.removeLayoutGroup(id: groups[sender.tag].id)
         }
     }
 }
