@@ -38,7 +38,7 @@ public final class VirtualDisplayManager {
         descriptor.setValue(UInt32(0x5353), forKey: "vendorID")
         descriptor.setValue(DispatchQueue.main, forKey: "queue")
         
-        guard let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject?,
+        guard let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeRetainedValue() as AnyObject?,
               let modeMethod = modeClass.instanceMethod(for: NSSelectorFromString("initWithWidth:height:refreshRate:")) else {
             return nil
         }
@@ -50,9 +50,10 @@ public final class VirtualDisplayManager {
         
         let settings = settingsClass.init()
         settings.setValue([mode], forKey: "modes")
-        settings.setValue(UInt32(1), forKey: "hiDPI")
+        let hiDPIValue: UInt32 = preset.isHiDPI ? 1 : 0
+        settings.setValue(hiDPIValue, forKey: "hiDPI")
         
-        guard let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject?,
+        guard let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeRetainedValue() as AnyObject?,
               let displayMethod = displayClass.instanceMethod(for: NSSelectorFromString("initWithDescriptor:")) else {
             return nil
         }
@@ -74,6 +75,7 @@ public final class VirtualDisplayManager {
         activeDisplays[id] = (displayInstance, preset)
         let key = storageKey ?? "Preset_\(preset.id)"
         StreamWindowManager.shared.openWindow(for: id, title: preset.name, width: preset.width, height: preset.height, storageKey: key)
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
         return id
     }
     
@@ -87,10 +89,12 @@ public final class VirtualDisplayManager {
     public func teardownDisplay(id: CGDirectDisplayID) {
         StreamWindowManager.shared.closeWindow(for: id)
         activeDisplays.removeValue(forKey: id)
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
     
     public func teardownAllDisplays() {
         StreamWindowManager.shared.closeAllWindows()
         activeDisplays.removeAll()
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
 }

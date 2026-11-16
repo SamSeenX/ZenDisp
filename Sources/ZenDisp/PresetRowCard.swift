@@ -33,29 +33,34 @@ final class PresetRowCard: NSView {
         heightAnchor.constraint(equalToConstant: 64).isActive = true
         widthAnchor.constraint(equalToConstant: 505).isActive = true
         
-        let icon = NSImageView(frame: NSRect(x: 16, y: 19, width: 26, height: 26))
-        let img = NSImage(systemSymbolName: "display", accessibilityDescription: nil)
-        icon.image = img
+        let icon = NSImageView(frame: NSRect(x: 14, y: 19, width: 26, height: 26))
+        icon.image = NSImage(systemSymbolName: "display", accessibilityDescription: nil)
         icon.contentTintColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
         addSubview(icon)
         
         let title = NSTextField(labelWithString: preset.name)
-        title.font = NSFont.systemFont(ofSize: 14, weight: .bold)
+        title.font = NSFont.systemFont(ofSize: 13, weight: .bold)
         title.textColor = .white
-        title.frame = NSRect(x: 52, y: 11, width: 235, height: 22)
+        title.frame = NSRect(x: 46, y: 11, width: 180, height: 22)
         addSubview(title)
         
-        let specs = NSTextField(labelWithString: "\(preset.width) × \(preset.height) • \(preset.aspectLabel) • 60Hz")
-        specs.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+        let specs = NSTextField(labelWithString: "\(preset.width) × \(preset.height) • \(preset.aspectLabel)")
+        specs.font = NSFont.systemFont(ofSize: 10, weight: .medium)
         specs.textColor = NSColor(white: 0.85, alpha: 1.0)
-        specs.frame = NSRect(x: 52, y: 34, width: 235, height: 18)
+        specs.frame = NSRect(x: 46, y: 34, width: 180, height: 18)
         addSubview(specs)
+        
+        let hidpiBtn = PresetButton(title: preset.isHiDPI ? "HiDPI" : "1x", target: self, action: #selector(toggleHiDPIClicked))
+        hidpiBtn.bezelStyle = .rounded
+        hidpiBtn.frame = NSRect(x: 232, y: 16, width: 64, height: 32)
+        hidpiBtn.preset = preset
+        addSubview(hidpiBtn)
         
         let spawnBtn = PresetButton(title: "Spawn", target: self, action: #selector(spawnClicked))
         spawnBtn.bezelStyle = .rounded
         spawnBtn.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
         spawnBtn.imagePosition = .imageLeading
-        spawnBtn.frame = NSRect(x: 295, y: 16, width: 95, height: 32)
+        spawnBtn.frame = NSRect(x: 302, y: 16, width: 92, height: 32)
         spawnBtn.preset = preset
         addSubview(spawnBtn)
         
@@ -63,10 +68,14 @@ final class PresetRowCard: NSView {
         removeBtn.bezelStyle = .rounded
         removeBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
         removeBtn.imagePosition = .imageLeading
-        removeBtn.frame = NSRect(x: 398, y: 16, width: 95, height: 32)
+        removeBtn.frame = NSRect(x: 400, y: 16, width: 94, height: 32)
         removeBtn.isEnabled = preset.isCustom
         removeBtn.preset = preset
         addSubview(removeBtn)
+    }
+    
+    @objc private func toggleHiDPIClicked() {
+        PresetManager.shared.toggleHiDPI(for: preset.id)
     }
     
     @objc private func spawnClicked() {
