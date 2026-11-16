@@ -2,6 +2,13 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.3.1] - 2026-11-16
+### Fixed
+* Generated and trusted local code signing certificate ZenDisp Local in login keychain to ensure macOS TCC permanently persists Screen Recording permissions across relaunches.
+* Removed tccutil reset command from build script to prevent wiping user permissions during installs.
+* Added NSEvent addLocalMonitorForEvents in AppDelegate to capture Option + Escape hotkey when the full-screen Stream Viewer is focused.
+* Made releaseToHost in CursorRouter unconditional to guarantee mouse returns to primary display center.
+
 ## [0.3.0] - 2026-11-16
 ### Added
 * Replaced synthetic event simulation with CursorRouter snap-to-virtual cursor teleportation.

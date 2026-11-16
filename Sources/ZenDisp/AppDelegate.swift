@@ -5,6 +5,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     private var statusItem: NSStatusItem!
     private let statusMenu = NSMenu()
     private var eventMonitor: Any?
+    private var localMonitor: Any?
     
     public func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -140,14 +141,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if flags == [.option, .command, .control] && event.keyCode == 15 {
-                DispatchQueue.main.async {
-                    self?.panicReset()
-                }
-            } else if (flags == [.option] || flags == [.command]) && event.keyCode == 53 {
-                DispatchQueue.main.async {
-                    self?.releaseCursor()
-                }
+                DispatchQueue.main.async { self?.panicReset() }
+            } else if flags.contains(.option) && event.keyCode == 53 {
+                DispatchQueue.main.async { self?.releaseCursor() }
             }
+        }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if flags.contains(.option) && event.keyCode == 53 {
+                DispatchQueue.main.async { self?.releaseCursor() }
+                return nil
+            }
+            return event
         }
     }
     

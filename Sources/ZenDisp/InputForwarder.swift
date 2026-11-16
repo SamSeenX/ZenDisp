@@ -45,10 +45,8 @@ public final class CursorRouter {
 
     /// Release hotkey or Space-swipe: warp cursor back to host screen.
     public func releaseToHost() {
-        guard isLockedToVirtual else { return }
         CGAssociateMouseAndMouseCursorPosition(1)
-        // Warp back to where the user was before entering the virtual display
-        let target = lastHostPosition.x == 0 ? mainScreenCenter() : lastHostPosition
+        let target = (lastHostPosition.x == 0 && lastHostPosition.y == 0) ? mainScreenCenter() : lastHostPosition
         CGWarpMouseCursorPosition(target)
         isLockedToVirtual = false
     }

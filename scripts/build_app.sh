@@ -21,24 +21,25 @@ cp "$PROJECT_DIR/.build/release/ZenDisp" "$MACOS_DIR/ZenDisp"
 chmod +x "$MACOS_DIR/ZenDisp"
 cp "$PROJECT_DIR/Info.plist" "$CONTENTS_DIR/Info.plist"
 
-echo "==> Clearing extended attributes and applying stable codesign..."
+SIGN_IDENTITY="-"
+if security find-identity -p codesigning -v | grep -q "ZenDisp Local"; then
+    SIGN_IDENTITY="ZenDisp Local"
+    echo "==> Using trusted certificate: ZenDisp Local"
+else
+    echo "==> Using ad-hoc signature"
+fi
+
+echo "==> Clearing extended attributes and signing..."
 xattr -cr "$APP_DIR"
-codesign --force --deep -s - -r='designated => identifier "com.samseen.ZenDisp"' "$APP_DIR"
+codesign --force --deep -s "$SIGN_IDENTITY" -r='designated => identifier "com.samseen.ZenDisp"' "$APP_DIR"
 
 INSTALL_DIR="/Applications/ZenDisp.app"
 echo "==> Installing to $INSTALL_DIR..."
-# Kill any running instance first so the binary is not locked
 pkill -f "ZenDisp" 2>/dev/null || true
 sleep 0.5
 rm -rf "$INSTALL_DIR"
 cp -R "$APP_DIR" "$INSTALL_DIR"
 xattr -cr "$INSTALL_DIR"
-codesign --force --deep -s - -r='designated => identifier "com.samseen.ZenDisp"' "$INSTALL_DIR"
+codesign --force --deep -s "$SIGN_IDENTITY" -r='designated => identifier "com.samseen.ZenDisp"' "$INSTALL_DIR"
 
-# Reset the stale TCC CDHash record so the fresh binary gets a clean first-launch grant.
-# The user will see the system prompt once, approve it, and it will never re-prompt
-# unless the bundle identifier changes.
-echo "==> Resetting stale TCC ScreenCapture record so fresh CDHash registers cleanly..."
-tccutil reset ScreenCapture com.samseen.ZenDisp 2>/dev/null || true
-
-echo "==> Done. Launch /Applications/ZenDisp.app and approve Screen Recording once when prompted."
+echo "==> ZenDisp.app installed successfully at $INSTALL_DIR"
