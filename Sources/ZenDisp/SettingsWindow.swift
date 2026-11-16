@@ -21,6 +21,7 @@ public final class SettingsWindowController: NSWindowController {
         win.isMovableByWindowBackground = true
         win.isReleasedWhenClosed = false
         win.appearance = NSAppearance(named: .darkAqua)
+        win.level = NSWindow.Level(Int(CGWindowLevelForKey(.floatingWindow)) + 1)
         super.init(window: win)
         setupVisualShell()
     }
@@ -102,6 +103,7 @@ public final class SettingsWindowController: NSWindowController {
     public func showWindow() {
         window?.center()
         window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
     }
 }
