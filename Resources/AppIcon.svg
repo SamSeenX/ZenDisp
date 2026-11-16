@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <linearGradient id="primaryDisplay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="virtualDisplay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="16" y="16" width="224" height="224" rx="52" ry="52" fill="url(#bgGrad)" stroke="#334155" stroke-width="2" />
+
+  <!-- Background Virtual Monitor (Layer 2) -->
+  <g opacity="0.85" transform="translate(68, 54)">
+    <rect x="0" y="0" width="134" height="88" rx="14" fill="#18182f" stroke="url(#virtualDisplay)" stroke-width="3" stroke-dasharray="6,4" />
+    <path d="M 67 88 L 67 106 M 47 106 L 87 106" stroke="url(#virtualDisplay)" stroke-width="3" stroke-linecap="round" />
+    <circle cx="67" cy="44" r="5" fill="#a855f7" filter="url(#glow)" />
+  </g>
+
+  <!-- Foreground Primary Virtual Monitor (Layer 1) -->
+  <g transform="translate(48, 88)">
+    <!-- Display Body -->
+    <rect x="0" y="0" width="136" height="90" rx="14" fill="#0b1329" stroke="url(#primaryDisplay)" stroke-width="3.5" filter="url(#glow)" />
+    <!-- Stand -->
+    <path d="M 68 90 L 68 112 M 46 112 L 90 112" stroke="url(#primaryDisplay)" stroke-width="3.5" stroke-linecap="round" />
+    <!-- Screen Glass Shine -->
+    <path d="M 6 6 L 130 6 L 80 84 L 6 84 Z" fill="#ffffff" opacity="0.04" />
+    <!-- Center Zen Pulse -->
+    <circle cx="68" cy="45" r="8" fill="#38bdf8" />
+    <circle cx="68" cy="45" r="16" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.6" />
+  </g>
+
+  <!-- Connection Wave between Monitors -->
+  <path d="M 120 102 C 140 85, 145 75, 160 70" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,4" opacity="0.9" />
+</svg>
