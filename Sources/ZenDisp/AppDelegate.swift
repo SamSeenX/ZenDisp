@@ -14,11 +14,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
     
     private func requestSystemPermissions() {
-        if #available(macOS 11.0, *) {
-            if !CGPreflightScreenCaptureAccess() {
-                _ = CGRequestScreenCaptureAccess()
-            }
-        }
+        // Do NOT call CGRequestScreenCaptureAccess on launch.
+        // ScreenCaptureKit triggers the one-time TCC prompt automatically
+        // when SCShareableContent is first queried during stream start.
+        // Calling CGRequestScreenCaptureAccess separately anchors the TCC
+        // record to the binary CDHash at that moment, causing a re-prompt
+        // loop every time the binary is rebuilt with a new CDHash.
+        // Only request Accessibility if not already trusted.
         if !AXIsProcessTrusted() {
             let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
             _ = AXIsProcessTrustedWithOptions(opts)
