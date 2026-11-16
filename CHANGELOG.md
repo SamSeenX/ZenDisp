@@ -2,6 +2,14 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.5.9] - 2026-11-16
+### Added
+* Replaced legacy text menu with a modern macOS Control Center popover (NSPopover with vibrant NSVisualEffectView).
+* Built interactive ActiveDisplayCard with inline power toggle switches, live resolution labels, and 1x/2x/3x scale pills.
+* Added Delete / Remove options for custom saved layouts both inside the Control Center popover and in the Preferences Layouts tab.
+* Fixed Release Cursor menu keybind to properly display and register Control + Escape (⌃⎋).
+* Published official GitHub Release v0.5.8 with downloadable ZenDisp.dmg binary asset.
+
 ## [0.5.8] - 2026-11-16
 ### Added
 * Implemented multi-density DPI scaling with 1x Standard, 2x Retina HiDPI, and 3x Ultra HiDPI modes.

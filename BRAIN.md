@@ -17,6 +17,7 @@ ZenDisp is a native Swift menu bar application for macOS 13+ (Ventura and newer)
 * Dual Menu Bar and Dock presence (LSUIElement = false) with custom AppIcon.icns compiled from vector SVG.
 * Frosted glass vibrancy (NSVisualEffectView with hudWindow material) and card-based modular component architecture for Preferences UI.
 * Menu Bar Controller: Dedicated MenuBarController builds interactive status menus showing live virtual displays, individual window teardown controls, and seamless HiDPI hot-reloading with geometry preservation.
+* Control Center Menu Popover: Native NSPopover with dark blurred vibrancy hosts ActiveDisplayCards with inline power toggle switches, 1x/2x/3x scale pills, custom layout deletion, and hotkey badges.
 * Custom Layout Snapshots: Dynamic layout capture serializes active virtual monitors, their DPI states, and exact window coordinates into persistent LayoutGroups.
 * Multi-Density Scale Architecture: Supports 1x Standard (110 DPI), 2x Retina HiDPI (220 DPI), and 3x Ultra HiDPI (330 DPI) with proportional framebuffer backing stores and live in-place hot-reloading.
 * Ad-hoc or local trusted keychain certificate code signing and manual bundle structure via `scripts/build_app.sh` allowing direct CLI compilation without requiring Xcode GUI.

@@ -23,10 +23,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             button.title = "ZenDisp"
             button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "ZenDisp")
             button.imagePosition = .imageLeading
+            MenuPopoverController.shared.registerButton(button)
         }
-        statusItem.menu = statusMenu
-        statusMenu.delegate = MenuBarController.shared
-        MenuBarController.shared.buildMenu(statusMenu)
     }
     
     private func setupPanicHotkey() {
