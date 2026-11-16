@@ -2,6 +2,12 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.4.1] - 2026-11-16
+### Added
+* Built scrollable screen configurations list in DisplaysTabView with individual Spawn and Remove buttons.
+* Added inline Add Custom Configuration form with custom Width, Height, and Name fields.
+* Proactively modularized preferences into DisplaysTabView, LayoutsTabView, and NavigationTabView to keep all files under 170 lines.
+
 ## [0.4.0] - 2026-11-16
 ### Added
 * Upgraded to Multi-Display architecture supporting multiple simultaneous virtual displays.

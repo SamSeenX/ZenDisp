@@ -38,6 +38,7 @@ public struct LayoutGroup: Codable, Equatable {
 
 public final class PresetManager {
     public static let shared = PresetManager()
+    public static let didChangeNotification = Notification.Name("ZenDisp_PresetsDidChange")
     private let customPresetsKey = "ZenDisp_CustomPresets"
     private let layoutGroupsKey = "ZenDisp_LayoutGroups"
     
@@ -57,12 +58,14 @@ public final class PresetManager {
         customPresets.removeAll { $0.width == width && $0.height == height }
         customPresets.append(preset)
         saveCustomPresets()
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
         return preset
     }
     
     public func removeCustomPreset(id: String) {
         customPresets.removeAll { $0.id == id }
         saveCustomPresets()
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
     
     public func addLayoutGroup(name: String, presets: [DisplayPreset]) {
