@@ -10,6 +10,7 @@ public final class DisplaysTabView: NSView {
     private var widthField: NSTextField!
     private var heightField: NSTextField!
     private var nameField: NSTextField!
+    private var hidpiCheckbox: NSButton!
     private var listContainer: NSStackView!
     private var statusLabel: NSTextField!
     
@@ -93,6 +94,11 @@ public final class DisplaysTabView: NSView {
         nameField.stringValue = "Workspace Screen"
         card.addSubview(nameField)
         
+        hidpiCheckbox = NSButton(checkboxWithTitle: "HiDPI (2x Retina)", target: nil, action: nil)
+        hidpiCheckbox.frame = NSRect(x: 14, y: 88, width: 160, height: 22)
+        hidpiCheckbox.state = .on
+        card.addSubview(hidpiCheckbox)
+        
         let addBtn = NSButton(title: "Add Display Preset", target: self, action: #selector(addPresetAction))
         addBtn.bezelStyle = .rounded
         addBtn.image = NSImage(systemSymbolName: "plus.circle.fill", accessibilityDescription: nil)
@@ -125,9 +131,8 @@ public final class DisplaysTabView: NSView {
         for preset in PresetManager.shared.allPresets {
             let card = PresetRowCard(
                 preset: preset,
-                onSpawn: { [weak self] p in
+                onSpawn: { p in
                     _ = VirtualDisplayManager.shared.createDisplay(preset: p)
-                    self?.refreshList()
                 },
                 onRemove: { p in
                     PresetManager.shared.removeCustomPreset(id: p.id)
@@ -143,12 +148,12 @@ public final class DisplaysTabView: NSView {
         let w = UInt(widthField.stringValue) ?? 1920
         let h = UInt(heightField.stringValue) ?? 1080
         let name = nameField.stringValue.isEmpty ? "\(w)x\(h)" : nameField.stringValue
-        _ = PresetManager.shared.addCustomPreset(width: w, height: h, name: name)
+        let isHiDPI = hidpiCheckbox.state == .on
+        _ = PresetManager.shared.addCustomPreset(width: w, height: h, name: name, isHiDPI: isHiDPI)
     }
     
     @objc private func teardownAllAction() {
         VirtualDisplayManager.shared.teardownAllDisplays()
         CursorRouter.shared.reset()
-        refreshList()
     }
 }

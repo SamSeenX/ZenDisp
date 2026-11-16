@@ -2,6 +2,15 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.5.5] - 2026-11-16
+### Added
+* Implemented individual HiDPI toggle for every display preset and custom resolution form, allowing independent switching between Retina 2x and 1x Standard DPI.
+* Built automated DMG packaging pipeline in scripts/create_dmg.sh with /Applications symlink for 1-click drag-and-drop installation.
+* Redesigned README.md as a consumer-facing product showcase with feature breakdowns, shortcuts cheat sheet, and precompiled DMG download links.
+
+### Fixed
+* Fixed background virtual display leak by adopting takeRetainedValue() on CoreGraphics Objective-C +alloc calls, ensuring displays automatically terminate from WindowServer and BetterDisplay immediately upon closing their PiP stream window.
+
 ## [0.5.4] - 2026-11-16
 ### Added
 * Built WindowStateManager providing automatic window frame persistence for individual display presets and multi-screen layout group slots.
