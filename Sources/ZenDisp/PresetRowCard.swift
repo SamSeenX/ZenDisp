@@ -41,33 +41,35 @@ final class PresetRowCard: NSView {
         let title = NSTextField(labelWithString: preset.name)
         title.font = NSFont.systemFont(ofSize: 13, weight: .bold)
         title.textColor = .white
-        title.frame = NSRect(x: 46, y: 11, width: 180, height: 22)
+        title.frame = NSRect(x: 46, y: 11, width: 220, height: 22)
         addSubview(title)
         
         let specs = NSTextField(labelWithString: "\(preset.width) × \(preset.height) • \(preset.aspectLabel)")
         specs.font = NSFont.systemFont(ofSize: 10, weight: .medium)
         specs.textColor = NSColor(white: 0.85, alpha: 1.0)
-        specs.frame = NSRect(x: 46, y: 34, width: 180, height: 18)
+        specs.frame = NSRect(x: 46, y: 34, width: 220, height: 18)
         addSubview(specs)
         
         let scaleSegment = NSSegmentedControl(labels: ["1x", "2x", "3x"], trackingMode: .selectOne, target: self, action: #selector(scaleChanged(_:)))
         scaleSegment.selectedSegment = Int(max(1, min(preset.scaleFactor, 3)) - 1)
-        scaleSegment.frame = NSRect(x: 218, y: 18, width: 82, height: 26)
+        scaleSegment.frame = NSRect(x: 280, y: 18, width: 100, height: 26)
         addSubview(scaleSegment)
         
-        let spawnBtn = PresetButton(title: "Spawn", target: self, action: #selector(spawnClicked))
-        spawnBtn.bezelStyle = .rounded
-        spawnBtn.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
-        spawnBtn.imagePosition = .imageLeading
-        spawnBtn.frame = NSRect(x: 302, y: 16, width: 92, height: 32)
-        spawnBtn.preset = preset
-        addSubview(spawnBtn)
+        let launchBtn = PresetButton(image: NSImage(systemSymbolName: "play.circle.fill", accessibilityDescription: "Launch")!, target: self, action: #selector(spawnClicked))
+        launchBtn.bezelStyle = .inline
+        launchBtn.isBordered = false
+        launchBtn.contentTintColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+        launchBtn.toolTip = "Launch"
+        launchBtn.frame = NSRect(x: 400, y: 16, width: 32, height: 32)
+        launchBtn.preset = preset
+        addSubview(launchBtn)
         
-        let removeBtn = PresetButton(title: "Remove", target: self, action: #selector(removeClicked))
-        removeBtn.bezelStyle = .rounded
-        removeBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
-        removeBtn.imagePosition = .imageLeading
-        removeBtn.frame = NSRect(x: 400, y: 16, width: 94, height: 32)
+        let removeBtn = PresetButton(image: NSImage(systemSymbolName: "trash.circle.fill", accessibilityDescription: "Delete")!, target: self, action: #selector(removeClicked))
+        removeBtn.bezelStyle = .inline
+        removeBtn.isBordered = false
+        removeBtn.contentTintColor = NSColor.systemRed
+        removeBtn.toolTip = "Delete"
+        removeBtn.frame = NSRect(x: 448, y: 16, width: 32, height: 32)
         removeBtn.isEnabled = preset.isCustom
         removeBtn.preset = preset
         addSubview(removeBtn)

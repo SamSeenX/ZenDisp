@@ -2,6 +2,13 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.6.0] - 2026-11-16
+### Added
+* Added Individual Displays section to the Control Center popover, listing all display presets with clean icon launch buttons.
+* Standardized action buttons with sleek circular icons (play.circle.fill) and hover tooltips ('Launch') across both the popover and Preferences tabs.
+* Integrated trash icon buttons with hover tooltips ('Delete' and 'Delete Layout') across all preset cards and layout group rows.
+* Wrapped popover body inside an NSScrollView for smooth vertical scrolling across active monitors, individual presets, and multi-display layout groups.
+
 ## [0.5.9] - 2026-11-16
 ### Added
 * Replaced legacy text menu with a modern macOS Control Center popover (NSPopover with vibrant NSVisualEffectView).

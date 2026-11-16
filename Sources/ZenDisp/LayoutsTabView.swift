@@ -48,30 +48,32 @@ public final class LayoutsTabView: NSView {
             let title = NSTextField(labelWithString: group.name)
             title.font = NSFont.systemFont(ofSize: 14, weight: .bold)
             title.textColor = .white
-            title.frame = NSRect(x: 52, y: 11, width: 300, height: 22)
+            title.frame = NSRect(x: 52, y: 11, width: 350, height: 22)
             card.addSubview(title)
             
             let presetNames = group.presets.map { $0.name }.joined(separator: " + ")
             let sub = NSTextField(labelWithString: "\(group.presets.count) Displays: \(presetNames)")
             sub.font = NSFont.systemFont(ofSize: 11, weight: .medium)
             sub.textColor = NSColor(white: 0.85, alpha: 1.0)
-            sub.frame = NSRect(x: 52, y: 34, width: 300, height: 18)
+            sub.frame = NSRect(x: 52, y: 34, width: 350, height: 18)
             card.addSubview(sub)
             
-            let btn = NSButton(title: "Launch", target: self, action: #selector(launchGroupFromBtn(_:)))
-            btn.bezelStyle = .rounded
-            btn.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
-            btn.imagePosition = .imageLeading
+            let btn = NSButton(image: NSImage(systemSymbolName: "play.circle.fill", accessibilityDescription: "Launch")!, target: self, action: #selector(launchGroupFromBtn(_:)))
+            btn.bezelStyle = .inline
+            btn.isBordered = false
+            btn.contentTintColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+            btn.toolTip = "Launch"
             btn.tag = index
-            btn.frame = NSRect(x: 320, y: 16, width: 105, height: 32)
+            btn.frame = NSRect(x: 420, y: 16, width: 32, height: 32)
             card.addSubview(btn)
             
-            let delBtn = NSButton(title: "Delete", target: self, action: #selector(deleteGroupFromBtn(_:)))
-            delBtn.bezelStyle = .rounded
-            delBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
-            delBtn.imagePosition = .imageLeading
+            let delBtn = NSButton(image: NSImage(systemSymbolName: "trash.circle.fill", accessibilityDescription: "Delete Layout")!, target: self, action: #selector(deleteGroupFromBtn(_:)))
+            delBtn.bezelStyle = .inline
+            delBtn.isBordered = false
+            delBtn.contentTintColor = NSColor.systemRed
+            delBtn.toolTip = "Delete Layout"
             delBtn.tag = index
-            delBtn.frame = NSRect(x: 430, y: 16, width: 78, height: 32)
+            delBtn.frame = NSRect(x: 462, y: 16, width: 32, height: 32)
             delBtn.isEnabled = index >= 2
             card.addSubview(delBtn)
             
