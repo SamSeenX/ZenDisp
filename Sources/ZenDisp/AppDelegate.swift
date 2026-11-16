@@ -15,17 +15,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
     
     private func requestSystemPermissions() {
-        // Do NOT call CGRequestScreenCaptureAccess on launch.
-        // ScreenCaptureKit triggers the one-time TCC prompt automatically
-        // when SCShareableContent is first queried during stream start.
-        // Calling CGRequestScreenCaptureAccess separately anchors the TCC
-        // record to the binary CDHash at that moment, causing a re-prompt
-        // loop every time the binary is rebuilt with a new CDHash.
-        // Only request Accessibility if not already trusted.
-        if !AXIsProcessTrusted() {
-            let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(opts)
-        }
+        // Do not pop modal dialogs on launch.
+        // ScreenCaptureKit triggers permission on stream start.
     }
     
     private func setupStatusItem() {
@@ -66,9 +57,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         addItem("Open PiP Viewer", action: #selector(openPiPViewer), key: "p", enabled: isAct)
         addItem("Close PiP Viewer", action: #selector(closePiPViewer), key: "w", enabled: isVis)
         addItem("Toggle Full-Screen Stream", action: #selector(toggleFullScreen), key: "f", enabled: isVis)
-        addItem("Release Cursor to Main Screen (⌥⎋)", action: #selector(releaseCursor), key: "\u{1b}", enabled: isAct)
+        addItem("Release Cursor to Main Screen (⌃⎋)", action: #selector(releaseCursor), key: "\u{1b}", enabled: isAct)
         statusMenu.addItem(NSMenuItem.separator())
         
+        addItem("Preferences...", action: #selector(openPreferences), key: ",")
         addItem("Check System Permissions...", action: #selector(checkPermissionsMenu))
         let panic = addItem("Panic Reset All (⌥⌘⌃R)", action: #selector(panicReset), key: "r")
         panic.keyEquivalentModifierMask = [.option, .command, .control]
@@ -122,7 +114,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
     
     @objc private func checkPermissionsMenu() {
-        requestSystemPermissions()
+        if #available(macOS 11.0, *) {
+            _ = CGRequestScreenCaptureAccess()
+        }
+        let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(opts)
+    }
+
+    @objc private func openPreferences() {
+        SettingsWindowController.shared.showWindow()
     }
     
     @objc private func releaseCursor() {
@@ -142,13 +142,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if flags == [.option, .command, .control] && event.keyCode == 15 {
                 DispatchQueue.main.async { self?.panicReset() }
-            } else if flags.contains(.option) && event.keyCode == 53 {
+            } else if flags.contains(.control) && event.keyCode == 53 {
                 DispatchQueue.main.async { self?.releaseCursor() }
             }
         }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            if flags.contains(.option) && event.keyCode == 53 {
+            if flags.contains(.control) && event.keyCode == 53 {
                 DispatchQueue.main.async { self?.releaseCursor() }
                 return nil
             }

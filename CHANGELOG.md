@@ -2,6 +2,12 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.3.2] - 2026-11-16
+### Fixed
+* Changed cursor release hotkey to Control + Escape (⌃⎋) to prevent conflicts with macOS Accessibility Spoken Content.
+* Silenced startup Accessibility permission dialogs by removing forced prompts from applicationDidFinishLaunching.
+* Added native SettingsWindowController for viewing shortcuts, navigation instructions, and privacy controls.
+
 ## [0.3.1] - 2026-11-16
 ### Fixed
 * Generated and trusted local code signing certificate ZenDisp Local in login keychain to ensure macOS TCC permanently persists Screen Recording permissions across relaunches.
