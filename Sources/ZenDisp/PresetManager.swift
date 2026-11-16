@@ -1,5 +1,16 @@
 import Foundation
 
+private func gcd(_ a: UInt, _ b: UInt) -> UInt {
+    var x = a
+    var y = b
+    while y != 0 {
+        let t = y
+        y = x % y
+        x = t
+    }
+    return x
+}
+
 public struct DisplayPreset: Codable, Equatable {
     public let id: String
     public let width: UInt
@@ -17,11 +28,22 @@ public struct DisplayPreset: Codable, Equatable {
         self.isCustom = isCustom
     }
     
-    public static let default900p = DisplayPreset(width: 1600, height: 900, name: "1600x900 (16:9)")
-    public static let default1080p = DisplayPreset(width: 1920, height: 1080, name: "1920x1080 (1080p)")
-    public static let default1440p = DisplayPreset(width: 2560, height: 1440, name: "2560x1440 (2K)")
+    public var aspectLabel: String {
+        let g = gcd(width, height)
+        let rw = width / g
+        let rh = height / g
+        if rw == 8 && rh == 5 { return "16:10" }
+        if height > width { return "\(rw):\(rh) Portrait" }
+        return "\(rw):\(rh)"
+    }
     
-    public static let defaults: [DisplayPreset] = [.default900p, .default1080p, .default1440p]
+    public static let default1080p = DisplayPreset(width: 1920, height: 1080, name: "1920x1080 (1080p 16:9)")
+    public static let defaultCoding = DisplayPreset(width: 1920, height: 1280, name: "1920x1280 (Coding 3:2)")
+    public static let defaultPortrait = DisplayPreset(width: 1080, height: 1920, name: "1080x1920 (Tall Portrait 9:16)")
+    public static let default1440p = DisplayPreset(width: 2560, height: 1440, name: "2560x1440 (2K 16:9)")
+    public static let default900p = DisplayPreset(width: 1600, height: 900, name: "1600x900 (16:9)")
+    
+    public static let defaults: [DisplayPreset] = [.default1080p, .defaultCoding, .defaultPortrait, .default1440p, .default900p]
 }
 
 public struct LayoutGroup: Codable, Equatable {
@@ -40,7 +62,7 @@ public final class PresetManager {
     public static let shared = PresetManager()
     public static let didChangeNotification = Notification.Name("ZenDisp_PresetsDidChange")
     private let customPresetsKey = "ZenDisp_CustomPresets"
-    private let layoutGroupsKey = "ZenDisp_LayoutGroups"
+    private let layoutGroupsKey = "ZenDisp_LayoutGroups_v2"
     
     public private(set) var customPresets: [DisplayPreset] = []
     public private(set) var layoutGroups: [LayoutGroup] = []
@@ -85,12 +107,13 @@ public final class PresetManager {
             customPresets = decoded
         }
         if let data = UserDefaults.standard.data(forKey: layoutGroupsKey),
-           let decoded = try? JSONDecoder().decode([LayoutGroup].self, from: data) {
+           let decoded = try? JSONDecoder().decode([LayoutGroup].self, from: data),
+           !decoded.isEmpty {
             layoutGroups = decoded
         } else {
             layoutGroups = [
-                LayoutGroup(name: "Dual 1080p Workstation", presets: [.default1080p, .default1080p]),
-                LayoutGroup(name: "Coding + Reference Layout", presets: [.default1440p, .default900p])
+                LayoutGroup(name: "Side-by-Side Dual Workstation (1:1)", presets: [.default1080p, .default1080p]),
+                LayoutGroup(name: "Developer Coding Suite (3:2 + Tall 9:16)", presets: [.defaultCoding, .defaultPortrait])
             ]
             saveLayoutGroups()
         }

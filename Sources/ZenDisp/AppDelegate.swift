@@ -12,6 +12,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         setupMenu()
         setupPanicHotkey()
     }
+
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        SettingsWindowController.shared.showWindow()
+        return true
+    }
     
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -117,6 +122,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
     }
 
     @objc private func panicReset() {
+        WindowStateManager.shared.clearSavedFrames()
         CursorRouter.shared.reset()
         VirtualDisplayManager.shared.teardownAllDisplays()
         CGDisplayRestoreColorSyncSettings()

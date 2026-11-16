@@ -3,11 +3,21 @@ import Cocoa
 public final class StreamWindowController: NSWindowController, NSWindowDelegate {
     public let displayID: CGDirectDisplayID
     private let streamView: StreamView
+    private let storageKey: String
     
-    public init(displayID: CGDirectDisplayID, title: String, index: Int) {
+    public init(displayID: CGDirectDisplayID, title: String, width: UInt = 1920, height: UInt = 1080, index: Int, storageKey: String = "") {
         self.displayID = displayID
-        let offset = CGFloat(index * 40)
-        let initialRect = NSRect(x: 100 + offset, y: 100 + offset, width: 800, height: 450)
+        self.storageKey = storageKey
+        let isPortrait = height > width
+        let w: CGFloat = isPortrait ? 380 : (width * 2 == height * 3 ? 640 : 720)
+        let h: CGFloat = CGFloat(Double(w) * Double(height) / Double(width))
+        let screenW = NSScreen.main?.visibleFrame.width ?? 1440
+        let screenH = NSScreen.main?.visibleFrame.height ?? 900
+        let xPos = min(50 + CGFloat(index) * (w + 20), screenW - w - 20)
+        let yPos = max(screenH - h - 60 - CGFloat(index * 20), 50)
+        let defaultRect = NSRect(x: xPos, y: yPos, width: w, height: h)
+        let initialRect = WindowStateManager.shared.savedFrame(for: storageKey) ?? defaultRect
+        
         let window = NSWindow(
             contentRect: initialRect,
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -19,10 +29,10 @@ public final class StreamWindowController: NSWindowController, NSWindowDelegate 
         window.backgroundColor = .black
         window.level = .floating
         window.collectionBehavior = [.fullScreenPrimary]
-        window.contentAspectRatio = NSSize(width: 16, height: 9)
-        window.minSize = NSSize(width: 400, height: 225)
+        window.contentAspectRatio = NSSize(width: Int(width), height: Int(height))
+        window.minSize = NSSize(width: max(w * 0.4, 240), height: max(h * 0.4, 180))
         
-        self.streamView = StreamView(frame: NSRect(x: 0, y: 0, width: 800, height: 450))
+        self.streamView = StreamView(frame: NSRect(x: 0, y: 0, width: initialRect.width, height: initialRect.height))
         super.init(window: window)
         window.delegate = self
         window.contentView = streamView
@@ -44,6 +54,18 @@ public final class StreamWindowController: NSWindowController, NSWindowDelegate 
         window?.toggleFullScreen(nil)
     }
     
+    public func windowDidMove(_ notification: Notification) {
+        if let win = window, !storageKey.isEmpty {
+            WindowStateManager.shared.saveFrame(win.frame, for: storageKey)
+        }
+    }
+    
+    public func windowDidEndLiveResize(_ notification: Notification) {
+        if let win = window, !storageKey.isEmpty {
+            WindowStateManager.shared.saveFrame(win.frame, for: storageKey)
+        }
+    }
+    
     public func windowWillClose(_ notification: Notification) {
         streamView.stopCapture()
         VirtualDisplayManager.shared.teardownDisplay(id: displayID)
@@ -59,12 +81,19 @@ public final class StreamWindowManager {
     public var hasWindows: Bool { !windows.isEmpty }
     public var windowCount: Int { windows.count }
     
-    public func openWindow(for displayID: CGDirectDisplayID, title: String) {
+    public func openWindow(for displayID: CGDirectDisplayID, title: String, width: UInt = 1920, height: UInt = 1080, storageKey: String = "") {
         if let existing = windows[displayID] {
             existing.window?.makeKeyAndOrderFront(nil)
             return
         }
-        let controller = StreamWindowController(displayID: displayID, title: title, index: windows.count)
+        let controller = StreamWindowController(
+            displayID: displayID,
+            title: title,
+            width: width,
+            height: height,
+            index: windows.count,
+            storageKey: storageKey
+        )
         windows[displayID] = controller
     }
     

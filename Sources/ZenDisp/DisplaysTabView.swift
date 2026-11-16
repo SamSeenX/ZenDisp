@@ -1,15 +1,17 @@
 import Cocoa
 
-final class PresetButton: NSButton {
-    var preset: DisplayPreset?
+final class FlippedCardView: NSView {
+    public override var isFlipped: Bool { true }
 }
 
 public final class DisplaysTabView: NSView {
+    public override var isFlipped: Bool { true }
+    
     private var widthField: NSTextField!
     private var heightField: NSTextField!
     private var nameField: NSTextField!
     private var listContainer: NSStackView!
-    private var scrollView: NSScrollView!
+    private var statusLabel: NSTextField!
     
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -22,96 +24,119 @@ public final class DisplaysTabView: NSView {
     }
     
     private func setupUI() {
-        let title = NSTextField(labelWithString: "Screen Configurations")
-        title.font = NSFont.boldSystemFont(ofSize: 13)
-        title.frame = NSRect(x: 20, y: 345, width: 300, height: 20)
-        addSubview(title)
+        let sectionHeader = NSTextField(labelWithString: "PRESET RESOLUTIONS")
+        sectionHeader.font = NSFont.systemFont(ofSize: 11, weight: .bold)
+        sectionHeader.textColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+        sectionHeader.frame = NSRect(x: 10, y: 4, width: 250, height: 20)
+        addSubview(sectionHeader)
         
-        scrollView = NSScrollView(frame: NSRect(x: 20, y: 155, width: 480, height: 180))
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
+        let scroll = NSScrollView(frame: NSRect(x: 10, y: 28, width: 520, height: 215))
+        scroll.hasVerticalScroller = true
+        scroll.drawsBackground = false
+        scroll.borderType = .noBorder
         
         listContainer = NSStackView()
         listContainer.orientation = .vertical
         listContainer.alignment = .leading
         listContainer.spacing = 8
-        listContainer.edgeInsets = NSEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         listContainer.translatesAutoresizingMaskIntoConstraints = false
         
         let clip = NSClipView()
+        clip.drawsBackground = false
         clip.documentView = listContainer
-        scrollView.contentView = clip
-        addSubview(scrollView)
+        scroll.contentView = clip
+        addSubview(scroll)
         
-        let addTitle = NSTextField(labelWithString: "Add Custom Configuration")
-        addTitle.font = NSFont.boldSystemFont(ofSize: 12)
-        addTitle.frame = NSRect(x: 20, y: 125, width: 200, height: 18)
-        addSubview(addTitle)
-        
-        let lblW = NSTextField(labelWithString: "W:")
-        lblW.frame = NSRect(x: 20, y: 95, width: 22, height: 20)
-        addSubview(lblW)
-        widthField = NSTextField(frame: NSRect(x: 44, y: 93, width: 65, height: 22))
-        widthField.stringValue = "1920"
-        addSubview(widthField)
-        
-        let lblH = NSTextField(labelWithString: "H:")
-        lblH.frame = NSRect(x: 115, y: 95, width: 22, height: 20)
-        addSubview(lblH)
-        heightField = NSTextField(frame: NSRect(x: 139, y: 93, width: 65, height: 22))
-        heightField.stringValue = "1080"
-        addSubview(heightField)
-        
-        let lblN = NSTextField(labelWithString: "Name:")
-        lblN.frame = NSRect(x: 215, y: 95, width: 45, height: 20)
-        addSubview(lblN)
-        nameField = NSTextField(frame: NSRect(x: 262, y: 93, width: 140, height: 22))
-        nameField.stringValue = "Workspace Screen"
-        addSubview(nameField)
-        
-        let addBtn = NSButton(title: "Add", target: self, action: #selector(addPresetAction))
-        addBtn.bezelStyle = .rounded
-        addBtn.frame = NSRect(x: 410, y: 88, width: 90, height: 32)
-        addSubview(addBtn)
-        
-        let teardownBtn = NSButton(title: "Teardown All Active Displays", target: self, action: #selector(teardownAllAction))
-        teardownBtn.bezelStyle = .rounded
-        teardownBtn.frame = NSRect(x: 16, y: 25, width: 220, height: 32)
-        addSubview(teardownBtn)
-        
+        setupAddCard()
+        setupFooter()
         refreshList()
     }
     
-    @objc public func refreshList() {
-        for v in listContainer.arrangedSubviews {
-            listContainer.removeArrangedSubview(v)
-            v.removeFromSuperview()
-        }
+    private func setupAddCard() {
+        let card = FlippedCardView(frame: NSRect(x: 10, y: 252, width: 520, height: 135))
+        card.wantsLayer = true
+        card.layer?.cornerRadius = 10
+        card.layer?.borderWidth = 1.0
+        card.layer?.borderColor = NSColor(white: 0.32, alpha: 0.65).cgColor
+        card.layer?.backgroundColor = NSColor(white: 0.16, alpha: 0.92).cgColor
         
-        for preset in PresetManager.shared.allPresets {
-            let row = NSView(frame: NSRect(x: 0, y: 0, width: 450, height: 30))
-            row.heightAnchor.constraint(equalToConstant: 30).isActive = true
-            row.widthAnchor.constraint(equalToConstant: 450).isActive = true
-            
-            let nameLbl = NSTextField(labelWithString: "\(preset.name) (\(preset.width)x\(preset.height))")
-            nameLbl.frame = NSRect(x: 0, y: 5, width: 280, height: 20)
-            row.addSubview(nameLbl)
-            
-            let spawnBtn = PresetButton(title: "Spawn", target: self, action: #selector(spawnPresetFromBtn(_:)))
-            spawnBtn.bezelStyle = .rounded
-            spawnBtn.frame = NSRect(x: 285, y: 0, width: 75, height: 28)
-            spawnBtn.preset = preset
-            row.addSubview(spawnBtn)
-            
-            let removeBtn = PresetButton(title: "Remove", target: self, action: #selector(removePresetFromBtn(_:)))
-            removeBtn.bezelStyle = .rounded
-            removeBtn.frame = NSRect(x: 365, y: 0, width: 80, height: 28)
-            removeBtn.isEnabled = preset.isCustom
-            removeBtn.preset = preset
-            row.addSubview(removeBtn)
-            
-            listContainer.addArrangedSubview(row)
+        let boxTitle = NSTextField(labelWithString: "ADD CUSTOM RESOLUTION")
+        boxTitle.font = NSFont.systemFont(ofSize: 11, weight: .bold)
+        boxTitle.textColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+        boxTitle.frame = NSRect(x: 14, y: 12, width: 250, height: 20)
+        card.addSubview(boxTitle)
+        
+        let lblW = NSTextField(labelWithString: "Width:")
+        lblW.frame = NSRect(x: 14, y: 46, width: 45, height: 20)
+        lblW.textColor = .white
+        lblW.font = NSFont.systemFont(ofSize: 12)
+        card.addSubview(lblW)
+        widthField = NSTextField(frame: NSRect(x: 62, y: 43, width: 70, height: 24))
+        widthField.stringValue = "1920"
+        card.addSubview(widthField)
+        
+        let lblH = NSTextField(labelWithString: "Height:")
+        lblH.frame = NSRect(x: 145, y: 46, width: 48, height: 20)
+        lblH.textColor = .white
+        lblH.font = NSFont.systemFont(ofSize: 12)
+        card.addSubview(lblH)
+        heightField = NSTextField(frame: NSRect(x: 198, y: 43, width: 70, height: 24))
+        heightField.stringValue = "1080"
+        card.addSubview(heightField)
+        
+        let lblN = NSTextField(labelWithString: "Label:")
+        lblN.frame = NSRect(x: 282, y: 46, width: 42, height: 20)
+        lblN.textColor = .white
+        lblN.font = NSFont.systemFont(ofSize: 12)
+        card.addSubview(lblN)
+        nameField = NSTextField(frame: NSRect(x: 328, y: 43, width: 178, height: 24))
+        nameField.stringValue = "Workspace Screen"
+        card.addSubview(nameField)
+        
+        let addBtn = NSButton(title: "Add Display Preset", target: self, action: #selector(addPresetAction))
+        addBtn.bezelStyle = .rounded
+        addBtn.image = NSImage(systemSymbolName: "plus.circle.fill", accessibilityDescription: nil)
+        addBtn.imagePosition = .imageLeading
+        addBtn.frame = NSRect(x: 320, y: 84, width: 186, height: 32)
+        card.addSubview(addBtn)
+        addSubview(card)
+    }
+    
+    private func setupFooter() {
+        statusLabel = NSTextField(labelWithString: "Active Displays: 0")
+        statusLabel.font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+        statusLabel.textColor = .white
+        statusLabel.frame = NSRect(x: 14, y: 402, width: 250, height: 22)
+        addSubview(statusLabel)
+        
+        let teardownBtn = NSButton(title: "Teardown All Displays", target: self, action: #selector(teardownAllAction))
+        teardownBtn.bezelStyle = .rounded
+        teardownBtn.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: nil)
+        teardownBtn.imagePosition = .imageLeading
+        teardownBtn.frame = NSRect(x: 310, y: 396, width: 220, height: 32)
+        addSubview(teardownBtn)
+    }
+    
+    @objc public func refreshList() {
+        listContainer.arrangedSubviews.forEach {
+            listContainer.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
+        for preset in PresetManager.shared.allPresets {
+            let card = PresetRowCard(
+                preset: preset,
+                onSpawn: { [weak self] p in
+                    _ = VirtualDisplayManager.shared.createDisplay(preset: p)
+                    self?.refreshList()
+                },
+                onRemove: { p in
+                    PresetManager.shared.removeCustomPreset(id: p.id)
+                }
+            )
+            listContainer.addArrangedSubview(card)
+        }
+        let count = VirtualDisplayManager.shared.activeCount
+        statusLabel.stringValue = count > 0 ? "Active Displays: \(count)" : "No Active Displays"
     }
     
     @objc private func addPresetAction() {
@@ -121,20 +146,9 @@ public final class DisplaysTabView: NSView {
         _ = PresetManager.shared.addCustomPreset(width: w, height: h, name: name)
     }
     
-    @objc private func spawnPresetFromBtn(_ sender: PresetButton) {
-        if let preset = sender.preset {
-            _ = VirtualDisplayManager.shared.createDisplay(preset: preset)
-        }
-    }
-    
-    @objc private func removePresetFromBtn(_ sender: PresetButton) {
-        if let preset = sender.preset {
-            PresetManager.shared.removeCustomPreset(id: preset.id)
-        }
-    }
-    
     @objc private func teardownAllAction() {
         VirtualDisplayManager.shared.teardownAllDisplays()
         CursorRouter.shared.reset()
+        refreshList()
     }
 }

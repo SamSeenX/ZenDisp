@@ -1,6 +1,8 @@
 import Cocoa
 
 public final class LayoutsTabView: NSView {
+    public override var isFlipped: Bool { true }
+    
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupUI()
@@ -11,29 +13,55 @@ public final class LayoutsTabView: NSView {
     }
     
     private func setupUI() {
-        let title = NSTextField(labelWithString: "One-Click Multi-Screen Layout Groups")
-        title.font = NSFont.boldSystemFont(ofSize: 13)
-        title.frame = NSRect(x: 20, y: 345, width: 350, height: 20)
-        addSubview(title)
+        let sectionHeader = NSTextField(labelWithString: "MULTI-SCREEN WORKSPACE LAYOUTS")
+        sectionHeader.font = NSFont.systemFont(ofSize: 11, weight: .bold)
+        sectionHeader.textColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+        sectionHeader.frame = NSRect(x: 10, y: 4, width: 350, height: 20)
+        addSubview(sectionHeader)
         
-        let desc = NSTextField(wrappingLabelWithString: "Launch preconfigured multi-screen arrangements with a single click. Each display in the group spawns with its own floating stream window.")
-        desc.frame = NSRect(x: 20, y: 295, width: 460, height: 40)
-        desc.font = NSFont.systemFont(ofSize: 11)
+        let desc = NSTextField(wrappingLabelWithString: "Launch coordinated multi-screen layouts with a single click. Each virtual monitor automatically opens its own floating Picture-in-Picture window.")
+        desc.frame = NSRect(x: 10, y: 28, width: 520, height: 36)
+        desc.font = NSFont.systemFont(ofSize: 12)
+        desc.textColor = NSColor(white: 0.85, alpha: 1.0)
         addSubview(desc)
         
-        var yPos = 245
+        var yPos: CGFloat = 75
         for (index, group) in PresetManager.shared.layoutGroups.enumerated() {
-            let label = NSTextField(labelWithString: "\(group.name) (\(group.presets.count) Displays)")
-            label.font = NSFont.systemFont(ofSize: 12)
-            label.frame = NSRect(x: 20, y: yPos, width: 280, height: 22)
-            addSubview(label)
+            let card = NSView(frame: NSRect(x: 10, y: yPos, width: 520, height: 64))
+            card.wantsLayer = true
+            card.layer?.cornerRadius = 10
+            card.layer?.borderWidth = 1.0
+            card.layer?.borderColor = NSColor(white: 0.32, alpha: 0.65).cgColor
+            card.layer?.backgroundColor = NSColor(white: 0.16, alpha: 0.92).cgColor
             
-            let btn = NSButton(title: "Launch", target: self, action: #selector(launchGroupFromBtn(_:)))
+            let icon = NSImageView(frame: NSRect(x: 16, y: 19, width: 26, height: 26))
+            icon.image = NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: nil)
+            icon.contentTintColor = NSColor(red: 0.44, green: 0.78, blue: 1.0, alpha: 1.0)
+            card.addSubview(icon)
+            
+            let title = NSTextField(labelWithString: group.name)
+            title.font = NSFont.systemFont(ofSize: 14, weight: .bold)
+            title.textColor = .white
+            title.frame = NSRect(x: 52, y: 11, width: 300, height: 22)
+            card.addSubview(title)
+            
+            let presetNames = group.presets.map { $0.name }.joined(separator: " + ")
+            let sub = NSTextField(labelWithString: "\(group.presets.count) Displays: \(presetNames)")
+            sub.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+            sub.textColor = NSColor(white: 0.85, alpha: 1.0)
+            sub.frame = NSRect(x: 52, y: 34, width: 300, height: 18)
+            card.addSubview(sub)
+            
+            let btn = NSButton(title: "Launch Layout", target: self, action: #selector(launchGroupFromBtn(_:)))
             btn.bezelStyle = .rounded
+            btn.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
+            btn.imagePosition = .imageLeading
             btn.tag = index
-            btn.frame = NSRect(x: 320, y: yPos - 5, width: 90, height: 32)
-            addSubview(btn)
-            yPos -= 50
+            btn.frame = NSRect(x: 360, y: 16, width: 145, height: 32)
+            card.addSubview(btn)
+            
+            addSubview(card)
+            yPos += 74
         }
     }
     

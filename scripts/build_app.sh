@@ -37,7 +37,7 @@ codesign --force --deep -s "$SIGN_IDENTITY" -r='designated => identifier "com.sa
 
 INSTALL_DIR="/Applications/ZenDisp.app"
 echo "==> Installing to $INSTALL_DIR..."
-pkill -f "ZenDisp" 2>/dev/null || true
+pkill -x "ZenDisp" 2>/dev/null || true
 sleep 0.5
 rm -rf "$INSTALL_DIR"
 cp -R "$APP_DIR" "$INSTALL_DIR"

@@ -16,7 +16,7 @@ public final class VirtualDisplayManager {
         return activeDisplays[id]?.preset
     }
     
-    public func createDisplay(preset: DisplayPreset) -> CGDirectDisplayID? {
+    public func createDisplay(preset: DisplayPreset, storageKey: String? = nil) -> CGDirectDisplayID? {
         guard let descClass = NSClassFromString("CGVirtualDisplayDescriptor") as? NSObject.Type,
               let modeClass = NSClassFromString("CGVirtualDisplayMode") as? NSObject.Type,
               let settingsClass = NSClassFromString("CGVirtualDisplaySettings") as? NSObject.Type,
@@ -72,13 +72,15 @@ public final class VirtualDisplayManager {
         guard id != 0 else { return nil }
         
         activeDisplays[id] = (displayInstance, preset)
-        StreamWindowManager.shared.openWindow(for: id, title: preset.name)
+        let key = storageKey ?? "Preset_\(preset.id)"
+        StreamWindowManager.shared.openWindow(for: id, title: preset.name, width: preset.width, height: preset.height, storageKey: key)
         return id
     }
     
     public func launchGroup(_ group: LayoutGroup) {
-        for preset in group.presets {
-            _ = createDisplay(preset: preset)
+        for (index, preset) in group.presets.enumerated() {
+            let key = "Group_\(group.id)_Slot_\(index)"
+            _ = createDisplay(preset: preset, storageKey: key)
         }
     }
     
