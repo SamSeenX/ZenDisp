@@ -102,6 +102,10 @@ public final class StreamWindowManager {
         windows.removeValue(forKey: displayID)
     }
     
+    public func window(for displayID: CGDirectDisplayID) -> NSWindow? {
+        return windows[displayID]?.window
+    }
+    
     public func closeAllWindows() {
         for (_, controller) in windows {
             controller.closeStream()

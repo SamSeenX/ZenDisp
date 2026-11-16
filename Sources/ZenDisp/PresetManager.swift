@@ -89,7 +89,11 @@ public final class PresetManager {
     
     public func toggleHiDPI(for presetID: String) {
         let current = isHiDPI(for: presetID)
-        hiDPIOverrides[presetID] = !current
+        setHiDPI(!current, for: presetID)
+    }
+    
+    public func setHiDPI(_ enabled: Bool, for presetID: String) {
+        hiDPIOverrides[presetID] = enabled
         UserDefaults.standard.set(hiDPIOverrides, forKey: hiDPIOverridesKey)
         NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
@@ -123,6 +127,24 @@ public final class PresetManager {
     public func removeLayoutGroup(id: String) {
         layoutGroups.removeAll { $0.id == id }
         saveLayoutGroups()
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
+    }
+    
+    @discardableResult
+    public func saveCurrentLayout(name: String) -> LayoutGroup? {
+        let list = VirtualDisplayManager.shared.activeDisplaysList()
+        guard !list.isEmpty else { return nil }
+        let presets = list.map { $0.preset }
+        let group = LayoutGroup(name: name, presets: presets)
+        layoutGroups.append(group)
+        saveLayoutGroups()
+        for (index, item) in list.enumerated() {
+            if let frame = StreamWindowManager.shared.window(for: item.id)?.frame {
+                WindowStateManager.shared.saveFrame(frame, for: "Group_\(group.id)_Slot_\(index)")
+            }
+        }
+        NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
+        return group
     }
     
     private func loadData() {

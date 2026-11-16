@@ -6,6 +6,12 @@ public final class LayoutsTabView: NSView {
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupUI()
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshUI), name: PresetManager.didChangeNotification, object: nil)
+    }
+    
+    @objc private func refreshUI() {
+        subviews.forEach { $0.removeFromSuperview() }
+        setupUI()
     }
     
     public required init?(coder: NSCoder) {
