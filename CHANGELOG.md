@@ -2,6 +2,13 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.3.0] - 2026-11-16
+### Added
+* Replaced synthetic event simulation with CursorRouter snap-to-virtual cursor teleportation.
+* Added automatic cursor release to host display on three-finger Space swipe via NSWorkspace activeSpaceDidChangeNotification.
+* Added manual cursor release hotkey (Option + Escape or Command + Escape) to jump cursor back to the host display instantly.
+* Added Release Cursor to Main Screen menu item in status menu.
+
 ## [0.2.2] - 2026-11-14
 ### Fixed
 * Fixed TCC permission loop by binding ad-hoc code signature directly to designated requirement identifier "com.samseen.ZenDisp".

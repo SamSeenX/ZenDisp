@@ -8,59 +8,56 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
     private var isStreaming = false
     private let renderLayer = CALayer()
     private var targetDisplayID: CGDirectDisplayID?
-    
-    public override var isFlipped: Bool {
-        return true
-    }
-    
+
+    public override var isFlipped: Bool { true }
+    public override var acceptsFirstResponder: Bool { true }
+
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupLayer()
     }
-    
+
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupLayer()
     }
-    
+
     private func setupLayer() {
         wantsLayer = true
         renderLayer.contentsGravity = .resizeAspect
         renderLayer.backgroundColor = NSColor.black.cgColor
         layer = renderLayer
     }
-    
+
     public func startCapture(displayID: CGDirectDisplayID, completion: @escaping (Bool) -> Void) {
         stopCapture()
-        self.targetDisplayID = displayID
-        
+        targetDisplayID = displayID
+        CursorRouter.shared.configure(displayID: displayID)
+
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { [weak self] content, error in
-            guard let self = self, let content = content, error == nil else {
+            guard let self, let content, error == nil else {
                 DispatchQueue.main.async { completion(false) }
                 return
             }
-            
-            guard let targetDisplay = content.displays.first(where: { $0.displayID == displayID }) else {
+            guard let disp = content.displays.first(where: { $0.displayID == displayID }) else {
                 DispatchQueue.main.async { completion(false) }
                 return
             }
-            
-            let filter = SCContentFilter(display: targetDisplay, excludingWindows: [])
+            let filter = SCContentFilter(display: disp, excludingWindows: [])
             let config = SCStreamConfiguration()
-            config.width = targetDisplay.width
-            config.height = targetDisplay.height
+            config.width = disp.width
+            config.height = disp.height
             config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
             config.queueDepth = 3
             config.showsCursor = true
             config.pixelFormat = kCVPixelFormatType_32BGRA
-            
             do {
-                let stream = SCStream(filter: filter, configuration: config, delegate: self)
-                try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: DispatchQueue.main)
-                stream.startCapture { captureError in
+                let s = SCStream(filter: filter, configuration: config, delegate: self)
+                try s.addStreamOutput(self, type: .screen, sampleHandlerQueue: .main)
+                s.startCapture { err in
                     DispatchQueue.main.async {
-                        if captureError == nil {
-                            self.stream = stream
+                        if err == nil {
+                            self.stream = s
                             self.isStreaming = true
                             completion(true)
                         } else {
@@ -73,62 +70,63 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
             }
         }
     }
-    
+
     public func stopCapture() {
-        guard isStreaming, let stream = stream else { return }
-        stream.stopCapture { _ in }
-        self.stream = nil
-        self.isStreaming = false
-        self.targetDisplayID = nil
-        DispatchQueue.main.async {
-            self.renderLayer.contents = nil
-        }
+        guard isStreaming, let s = stream else { return }
+        s.stopCapture { _ in }
+        stream = nil
+        isStreaming = false
+        targetDisplayID = nil
+        CursorRouter.shared.reset()
+        DispatchQueue.main.async { self.renderLayer.contents = nil }
     }
-    
+
+    // MARK: - Mouse: snap cursor to virtual display on click, leave it there
+
     public override func mouseDown(with event: NSEvent) {
-        guard let id = targetDisplayID else { super.mouseDown(with: event); return }
-        let location = convert(event.locationInWindow, from: nil)
-        InputForwarder.shared.forwardClick(localPoint: location, viewSize: bounds.size, displayID: id, button: .left)
+        guard targetDisplayID != nil else { super.mouseDown(with: event); return }
+        window?.makeFirstResponder(self)
+        let pt = convert(event.locationInWindow, from: nil)
+        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size)
     }
-    
+
     public override func rightMouseDown(with event: NSEvent) {
-        guard let id = targetDisplayID else { super.rightMouseDown(with: event); return }
-        let location = convert(event.locationInWindow, from: nil)
-        InputForwarder.shared.forwardClick(localPoint: location, viewSize: bounds.size, displayID: id, button: .right)
+        guard targetDisplayID != nil else { super.rightMouseDown(with: event); return }
+        let pt = convert(event.locationInWindow, from: nil)
+        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size)
     }
-    
-    public override func mouseDragged(with event: NSEvent) {
-        guard let id = targetDisplayID else { super.mouseDragged(with: event); return }
-        let location = convert(event.locationInWindow, from: nil)
-        InputForwarder.shared.forwardDrag(localPoint: location, viewSize: bounds.size, displayID: id)
-    }
-    
+
+    // Scroll is forwarded synthetically since it has no position concept on warp
     public override func scrollWheel(with event: NSEvent) {
         guard let id = targetDisplayID else { super.scrollWheel(with: event); return }
-        let location = convert(event.locationInWindow, from: nil)
-        let dY = Int32(event.scrollingDeltaY * 4)
-        let dX = Int32(event.scrollingDeltaX * 4)
-        InputForwarder.shared.forwardScroll(localPoint: location, viewSize: bounds.size, displayID: id, deltaY: dY, deltaX: dX)
+        guard let target = CursorRouter.shared.mapToVirtualGlobal(
+            local: convert(event.locationInWindow, from: nil),
+            viewSize: bounds.size,
+            displayID: id
+        ) else { return }
+        if let ev = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+                            wheel1: Int32(event.scrollingDeltaY * 4),
+                            wheel2: Int32(event.scrollingDeltaX * 4), wheel3: 0) {
+            ev.location = target
+            ev.post(tap: .cghidEventTap)
+        }
     }
-    
+
+    // MARK: - Frame rendering
+
     public func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard type == .screen else { return }
-        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        guard let ioSurface = CVPixelBufferGetIOSurface(imageBuffer)?.takeUnretainedValue() else { return }
-        
+        guard type == .screen,
+              let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
+              let ioSurface = CVPixelBufferGetIOSurface(imageBuffer)?.takeUnretainedValue() else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         renderLayer.contents = ioSurface
         CATransaction.commit()
     }
-    
+
     public func stream(_ stream: SCStream, didStopWithError error: Error) {
-        DispatchQueue.main.async { [weak self] in
-            self?.stopCapture()
-        }
+        DispatchQueue.main.async { self.stopCapture() }
     }
-    
-    deinit {
-        stopCapture()
-    }
+
+    deinit { stopCapture() }
 }

@@ -65,6 +65,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         addItem("Open PiP Viewer", action: #selector(openPiPViewer), key: "p", enabled: isAct)
         addItem("Close PiP Viewer", action: #selector(closePiPViewer), key: "w", enabled: isVis)
         addItem("Toggle Full-Screen Stream", action: #selector(toggleFullScreen), key: "f", enabled: isVis)
+        addItem("Release Cursor to Main Screen (⌥⎋)", action: #selector(releaseCursor), key: "\u{1b}", enabled: isAct)
         statusMenu.addItem(NSMenuItem.separator())
         
         addItem("Check System Permissions...", action: #selector(checkPermissionsMenu))
@@ -123,7 +124,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         requestSystemPermissions()
     }
     
+    @objc private func releaseCursor() {
+        CursorRouter.shared.releaseToHost()
+    }
+
     @objc private func panicReset() {
+        CursorRouter.shared.reset()
         StreamWindowController.shared.closeStream()
         VirtualDisplayManager.shared.teardownDisplay()
         CGDisplayRestoreColorSyncSettings()
@@ -136,6 +142,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
             if flags == [.option, .command, .control] && event.keyCode == 15 {
                 DispatchQueue.main.async {
                     self?.panicReset()
+                }
+            } else if (flags == [.option] || flags == [.command]) && event.keyCode == 53 {
+                DispatchQueue.main.async {
+                    self?.releaseCursor()
                 }
             }
         }
