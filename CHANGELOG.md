@@ -2,6 +2,10 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.5.6] - 2026-11-16
+### Fixed
+* Elevated SettingsWindowController window level above floating PiP stream windows (floatingWindow + 1) with orderFrontRegardless so Preferences and reference panels always appear in front of virtual displays.
+
 ## [0.5.5] - 2026-11-16
 ### Added
 * Implemented individual HiDPI toggle for every display preset and custom resolution form, allowing independent switching between Retina 2x and 1x Standard DPI.
