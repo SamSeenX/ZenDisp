@@ -2,6 +2,15 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.5.7] - 2026-11-16
+### Added
+* Built MenuBarController providing interactive menu bar controls with live status indicators for running virtual displays.
+* Added per-display submenus in the status menu with instant HiDPI toggles (2x Retina vs 1x) and individual window close buttons.
+* Implemented live hot-reloading for running virtual displays, seamlessly recreating the display in the new DPI mode while preserving exact window positions.
+* Added "Save Current Layout as Preset..." menu option with native modal naming dialog, snapshotting active displays and custom window coordinates into reusable layout groups.
+* True 2x Retina backing store mode generation in VirtualDisplayManager for razor-sharp HiDPI text and UI rendering.
+* Completely purged legacy tag metadata from git history and pushed clean annotated tags to origin.
+
 ## [0.5.6] - 2026-11-16
 ### Fixed
 * Elevated SettingsWindowController window level above floating PiP stream windows (floatingWindow + 1) with orderFrontRegardless so Preferences and reference panels always appear in front of virtual displays.
