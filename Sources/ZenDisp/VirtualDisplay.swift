@@ -24,10 +24,10 @@ public final class VirtualDisplayManager {
             return nil
         }
         
-        let scale: UInt = preset.isHiDPI ? 2 : 1
+        let scale = max(1, min(preset.scaleFactor, 3))
         let pixelWidth = preset.width * scale
         let pixelHeight = preset.height * scale
-        let dpi: Double = preset.isHiDPI ? 220.0 : 110.0
+        let dpi: Double = 110.0 * Double(scale)
         
         serialCounter += 1
         let descriptor = descClass.init()
@@ -95,18 +95,25 @@ public final class VirtualDisplayManager {
         return activeDisplays.map { ($0.key, $0.value.preset) }
     }
     
-    public func toggleHiDPI(for id: CGDirectDisplayID) {
+    public func setScale(_ scale: UInt, for id: CGDirectDisplayID) {
         guard let info = activeDisplays[id] else { return }
         let preset = info.preset
-        let newHiDPI = !preset.isHiDPI
-        let newPreset = preset.withHiDPI(newHiDPI)
-        PresetManager.shared.setHiDPI(newHiDPI, for: preset.id)
+        let validScale = max(1, min(scale, 3))
+        let newPreset = preset.withScale(validScale)
+        PresetManager.shared.setScale(validScale, for: preset.id)
         let savedKey = "Active_\(id)"
         if let win = StreamWindowManager.shared.window(for: id) {
             WindowStateManager.shared.saveFrame(win.frame, for: savedKey)
         }
         teardownDisplay(id: id)
         _ = createDisplay(preset: newPreset, storageKey: savedKey)
+    }
+    
+    public func toggleHiDPI(for id: CGDirectDisplayID) {
+        guard let info = activeDisplays[id] else { return }
+        let current = info.preset.scaleFactor
+        let next: UInt = current == 1 ? 2 : (current == 2 ? 3 : 1)
+        setScale(next, for: id)
     }
     
     public func teardownDisplay(id: CGDirectDisplayID) {

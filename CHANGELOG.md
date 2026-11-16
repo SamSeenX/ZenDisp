@@ -2,6 +2,13 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.5.8] - 2026-11-16
+### Added
+* Implemented multi-density DPI scaling with 1x Standard, 2x Retina HiDPI, and 3x Ultra HiDPI modes.
+* Interactive 1x/2x/3x scale switcher in the menu bar dropdown under each running virtual display with instant live hot-reloading.
+* Added 3-way segmented control in Preferences display cards and custom resolution form for configuring default scale factors.
+* Proportional framebuffer backing store generation in VirtualDisplayManager (1920x1080 at 1x, 3840x2160 at 2x, 5760x3240 at 3x) for super-sampling.
+
 ## [0.5.7] - 2026-11-16
 ### Added
 * Built MenuBarController providing interactive menu bar controls with live status indicators for running virtual displays.

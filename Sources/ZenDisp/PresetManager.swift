@@ -17,30 +17,38 @@ public struct DisplayPreset: Codable, Equatable {
     public let refreshRate: Double
     public let name: String
     public let isCustom: Bool
-    public let isHiDPI: Bool
+    public let scaleFactor: UInt
     
-    public init(width: UInt, height: UInt, refreshRate: Double = 60.0, name: String, isCustom: Bool = false, isHiDPI: Bool = true) {
+    public var isHiDPI: Bool { scaleFactor > 1 }
+    
+    public init(width: UInt, height: UInt, refreshRate: Double = 60.0, name: String, isCustom: Bool = false, scaleFactor: UInt = 2) {
         self.id = "\(width)x\(height)@\(Int(refreshRate))"
         self.width = width
         self.height = height
         self.refreshRate = refreshRate
         self.name = name
         self.isCustom = isCustom
-        self.isHiDPI = isHiDPI
+        self.scaleFactor = scaleFactor
     }
     
-    public func withHiDPI(_ enabled: Bool) -> DisplayPreset {
-        return DisplayPreset(width: width, height: height, refreshRate: refreshRate, name: name, isCustom: isCustom, isHiDPI: enabled)
+    public func withScale(_ scale: UInt) -> DisplayPreset {
+        return DisplayPreset(width: width, height: height, refreshRate: refreshRate, name: name, isCustom: isCustom, scaleFactor: scale)
+    }
+    
+    public var scaleLabel: String {
+        switch scaleFactor {
+        case 1: return "1x"
+        case 2: return "2x HiDPI"
+        case 3: return "3x Ultra"
+        default: return "\(scaleFactor)x"
+        }
     }
     
     public var aspectLabel: String {
         let g = gcd(width, height)
-        let rw = width / g
-        let rh = height / g
-        let mode = isHiDPI ? "HiDPI" : "1x"
-        if rw == 8 && rh == 5 { return "16:10 • \(mode)" }
-        if height > width { return "\(rw):\(rh) Portrait • \(mode)" }
-        return "\(rw):\(rh) • \(mode)"
+        let rw = width / g, rh = height / g
+        if rw == 8 && rh == 5 { return "16:10 • \(scaleLabel)" }
+        return height > width ? "\(rw):\(rh) Portrait • \(scaleLabel)" : "\(rw):\(rh) • \(scaleLabel)"
     }
     
     public static let default1080p = DisplayPreset(width: 1920, height: 1080, name: "1920x1080 (1080p 16:9)")
@@ -48,7 +56,6 @@ public struct DisplayPreset: Codable, Equatable {
     public static let defaultPortrait = DisplayPreset(width: 1080, height: 1920, name: "1080x1920 (Tall Portrait 9:16)")
     public static let default1440p = DisplayPreset(width: 2560, height: 1440, name: "2560x1440 (2K 16:9)")
     public static let default900p = DisplayPreset(width: 1600, height: 900, name: "1600x900 (16:9)")
-    
     public static let defaults: [DisplayPreset] = [.default1080p, .defaultCoding, .defaultPortrait, .default1440p, .default900p]
 }
 
@@ -69,44 +76,37 @@ public final class PresetManager {
     public static let didChangeNotification = Notification.Name("ZenDisp_PresetsDidChange")
     private let customPresetsKey = "ZenDisp_CustomPresets"
     private let layoutGroupsKey = "ZenDisp_LayoutGroups_v2"
-    private let hiDPIOverridesKey = "ZenDisp_HiDPIOverrides"
+    private let scaleOverridesKey = "ZenDisp_ScaleOverrides_v1"
     
     public private(set) var customPresets: [DisplayPreset] = []
     public private(set) var layoutGroups: [LayoutGroup] = []
-    private var hiDPIOverrides: [String: Bool] = [:]
+    private var scaleOverrides: [String: UInt] = [:]
     
-    private init() {
-        loadData()
-    }
+    private init() { loadData() }
     
     public var allPresets: [DisplayPreset] {
         let list = DisplayPreset.defaults + customPresets
-        return list.map { p in
-            let enabled = hiDPIOverrides[p.id] ?? p.isHiDPI
-            return p.withHiDPI(enabled)
-        }
+        return list.map { p in p.withScale(scaleOverrides[p.id] ?? p.scaleFactor) }
     }
     
-    public func toggleHiDPI(for presetID: String) {
-        let current = isHiDPI(for: presetID)
-        setHiDPI(!current, for: presetID)
-    }
-    
-    public func setHiDPI(_ enabled: Bool, for presetID: String) {
-        hiDPIOverrides[presetID] = enabled
-        UserDefaults.standard.set(hiDPIOverrides, forKey: hiDPIOverridesKey)
+    public func setScale(_ scale: UInt, for presetID: String) {
+        scaleOverrides[presetID] = max(1, min(scale, 3))
+        UserDefaults.standard.set(scaleOverrides, forKey: scaleOverridesKey)
         NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
     
-    public func isHiDPI(for presetID: String) -> Bool {
-        return hiDPIOverrides[presetID] ?? true
+    public func scale(for presetID: String) -> UInt { scaleOverrides[presetID] ?? 2 }
+    
+    public func toggleHiDPI(for presetID: String) {
+        let current = scale(for: presetID)
+        setScale(current == 1 ? 2 : (current == 2 ? 3 : 1), for: presetID)
     }
     
-    public func addCustomPreset(width: UInt, height: UInt, name: String, isHiDPI: Bool = true) -> DisplayPreset {
-        let preset = DisplayPreset(width: width, height: height, name: name, isCustom: true, isHiDPI: isHiDPI)
+    public func addCustomPreset(width: UInt, height: UInt, name: String, scaleFactor: UInt = 2) -> DisplayPreset {
+        let preset = DisplayPreset(width: width, height: height, name: name, isCustom: true, scaleFactor: scaleFactor)
         customPresets.removeAll { $0.width == width && $0.height == height }
         customPresets.append(preset)
-        hiDPIOverrides[preset.id] = isHiDPI
+        scaleOverrides[preset.id] = scaleFactor
         saveCustomPresets()
         NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
         return preset
@@ -114,7 +114,7 @@ public final class PresetManager {
     
     public func removeCustomPreset(id: String) {
         customPresets.removeAll { $0.id == id }
-        hiDPIOverrides.removeValue(forKey: id)
+        scaleOverrides.removeValue(forKey: id)
         saveCustomPresets()
         NotificationCenter.default.post(name: PresetManager.didChangeNotification, object: nil)
     }
@@ -148,14 +148,13 @@ public final class PresetManager {
     }
     
     private func loadData() {
-        hiDPIOverrides = UserDefaults.standard.dictionary(forKey: hiDPIOverridesKey) as? [String: Bool] ?? [:]
-        if let data = UserDefaults.standard.data(forKey: customPresetsKey),
-           let decoded = try? JSONDecoder().decode([DisplayPreset].self, from: data) {
-            customPresets = decoded
+        if let dict = UserDefaults.standard.dictionary(forKey: scaleOverridesKey) as? [String: Int] {
+            scaleOverrides = dict.mapValues { UInt($0) }
         }
+        if let data = UserDefaults.standard.data(forKey: customPresetsKey),
+           let decoded = try? JSONDecoder().decode([DisplayPreset].self, from: data) { customPresets = decoded }
         if let data = UserDefaults.standard.data(forKey: layoutGroupsKey),
-           let decoded = try? JSONDecoder().decode([LayoutGroup].self, from: data),
-           !decoded.isEmpty {
+           let decoded = try? JSONDecoder().decode([LayoutGroup].self, from: data), !decoded.isEmpty {
             layoutGroups = decoded
         } else {
             layoutGroups = [
@@ -167,14 +166,10 @@ public final class PresetManager {
     }
     
     private func saveCustomPresets() {
-        if let encoded = try? JSONEncoder().encode(customPresets) {
-            UserDefaults.standard.set(encoded, forKey: customPresetsKey)
-        }
+        if let encoded = try? JSONEncoder().encode(customPresets) { UserDefaults.standard.set(encoded, forKey: customPresetsKey) }
     }
     
     private func saveLayoutGroups() {
-        if let encoded = try? JSONEncoder().encode(layoutGroups) {
-            UserDefaults.standard.set(encoded, forKey: layoutGroupsKey)
-        }
+        if let encoded = try? JSONEncoder().encode(layoutGroups) { UserDefaults.standard.set(encoded, forKey: layoutGroupsKey) }
     }
 }

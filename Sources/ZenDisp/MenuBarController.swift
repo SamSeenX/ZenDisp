@@ -44,11 +44,19 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
         
         if count > 0 {
             for (id, preset) in activeList {
-                let modeStr = preset.isHiDPI ? "HiDPI" : "1x"
-                let dispItem = addItem(menu, title: "🟢 \(preset.name) • \(modeStr)", action: nil)
+                let dispItem = addItem(menu, title: "🟢 \(preset.name) • \(preset.scaleLabel)", action: nil)
                 let sub = NSMenu()
-                let hidpiTitle = preset.isHiDPI ? "✓ HiDPI Mode (2x Retina)" : "Enable HiDPI (2x Retina)"
-                addItem(sub, title: hidpiTitle, action: #selector(toggleActiveDisplayHiDPI(_:)), obj: id)
+                let scales: [(UInt, String)] = [
+                    (1, "1x Standard (1080p Backing)"),
+                    (2, "2x HiDPI Retina (4K Backing)"),
+                    (3, "3x HiDPI Ultra (6K Backing)")
+                ]
+                for (s, label) in scales {
+                    let check = preset.scaleFactor == s ? "✓ " : "    "
+                    let item = addItem(sub, title: "\(check)\(label)", action: #selector(setActiveScaleAction(_:)), obj: [id, s])
+                    if preset.scaleFactor == s { item.state = .on }
+                }
+                sub.addItem(NSMenuItem.separator())
                 addItem(sub, title: "Close This Window", action: #selector(closeActiveDisplay(_:)), obj: id)
                 dispItem.submenu = sub
             }
@@ -85,6 +93,13 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
         addItem(menu, title: "Quit ZenDisp", action: #selector(quitApp), key: "q")
     }
     
+    @objc private func setActiveScaleAction(_ sender: NSMenuItem) {
+        guard let arr = sender.representedObject as? [Any],
+              let id = arr[0] as? CGDirectDisplayID,
+              let scale = arr[1] as? UInt else { return }
+        VirtualDisplayManager.shared.setScale(scale, for: id)
+    }
+    
     @objc private func toggleActiveDisplayHiDPI(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? CGDirectDisplayID else { return }
         VirtualDisplayManager.shared.toggleHiDPI(for: id)
@@ -110,9 +125,7 @@ public final class MenuBarController: NSObject, NSMenuDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn {
             let name = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !name.isEmpty {
-                PresetManager.shared.saveCurrentLayout(name: name)
-            }
+            if !name.isEmpty { PresetManager.shared.saveCurrentLayout(name: name) }
         }
     }
     

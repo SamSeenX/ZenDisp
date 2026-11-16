@@ -50,11 +50,10 @@ final class PresetRowCard: NSView {
         specs.frame = NSRect(x: 46, y: 34, width: 180, height: 18)
         addSubview(specs)
         
-        let hidpiBtn = PresetButton(title: preset.isHiDPI ? "HiDPI" : "1x", target: self, action: #selector(toggleHiDPIClicked))
-        hidpiBtn.bezelStyle = .rounded
-        hidpiBtn.frame = NSRect(x: 232, y: 16, width: 64, height: 32)
-        hidpiBtn.preset = preset
-        addSubview(hidpiBtn)
+        let scaleSegment = NSSegmentedControl(labels: ["1x", "2x", "3x"], trackingMode: .selectOne, target: self, action: #selector(scaleChanged(_:)))
+        scaleSegment.selectedSegment = Int(max(1, min(preset.scaleFactor, 3)) - 1)
+        scaleSegment.frame = NSRect(x: 218, y: 18, width: 82, height: 26)
+        addSubview(scaleSegment)
         
         let spawnBtn = PresetButton(title: "Spawn", target: self, action: #selector(spawnClicked))
         spawnBtn.bezelStyle = .rounded
@@ -74,8 +73,9 @@ final class PresetRowCard: NSView {
         addSubview(removeBtn)
     }
     
-    @objc private func toggleHiDPIClicked() {
-        PresetManager.shared.toggleHiDPI(for: preset.id)
+    @objc private func scaleChanged(_ sender: NSSegmentedControl) {
+        let scale = UInt(sender.selectedSegment + 1)
+        PresetManager.shared.setScale(scale, for: preset.id)
     }
     
     @objc private func spawnClicked() {

@@ -10,7 +10,7 @@ public final class DisplaysTabView: NSView {
     private var widthField: NSTextField!
     private var heightField: NSTextField!
     private var nameField: NSTextField!
-    private var hidpiCheckbox: NSButton!
+    private var scaleSegment: NSSegmentedControl!
     private var listContainer: NSStackView!
     private var statusLabel: NSTextField!
     
@@ -94,10 +94,10 @@ public final class DisplaysTabView: NSView {
         nameField.stringValue = "Workspace Screen"
         card.addSubview(nameField)
         
-        hidpiCheckbox = NSButton(checkboxWithTitle: "HiDPI (2x Retina)", target: nil, action: nil)
-        hidpiCheckbox.frame = NSRect(x: 14, y: 88, width: 160, height: 22)
-        hidpiCheckbox.state = .on
-        card.addSubview(hidpiCheckbox)
+        scaleSegment = NSSegmentedControl(labels: ["1x Standard", "2x Retina", "3x Ultra"], trackingMode: .selectOne, target: nil, action: nil)
+        scaleSegment.selectedSegment = 1
+        scaleSegment.frame = NSRect(x: 14, y: 86, width: 260, height: 26)
+        card.addSubview(scaleSegment)
         
         let addBtn = NSButton(title: "Add Display Preset", target: self, action: #selector(addPresetAction))
         addBtn.bezelStyle = .rounded
@@ -148,8 +148,8 @@ public final class DisplaysTabView: NSView {
         let w = UInt(widthField.stringValue) ?? 1920
         let h = UInt(heightField.stringValue) ?? 1080
         let name = nameField.stringValue.isEmpty ? "\(w)x\(h)" : nameField.stringValue
-        let isHiDPI = hidpiCheckbox.state == .on
-        _ = PresetManager.shared.addCustomPreset(width: w, height: h, name: name, isHiDPI: isHiDPI)
+        let scale = UInt(scaleSegment.selectedSegment + 1)
+        _ = PresetManager.shared.addCustomPreset(width: w, height: h, name: name, scaleFactor: scale)
     }
     
     @objc private func teardownAllAction() {
