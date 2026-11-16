@@ -2,6 +2,14 @@
 
 All notable updates and milestones for ZenDisp are documented here.
 
+## [0.4.0] - 2026-11-16
+### Added
+* Upgraded to Multi-Display architecture supporting multiple simultaneous virtual displays.
+* Automatic PiP Stream Window creation for every newly spawned virtual monitor.
+* Added PresetManager with custom resolution storage and one-click Layout Groups.
+* Built tabbed Preferences window with Virtual Displays, Layout Groups, and Navigation controls.
+* Created minimalist vector AppIcon.svg with dual nested displays in cyan and violet gradients.
+
 ## [0.3.2] - 2026-11-16
 ### Fixed
 * Changed cursor release hotkey to Control + Escape (⌃⎋) to prevent conflicts with macOS Accessibility Spoken Content.

@@ -11,12 +11,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         setupStatusItem()
         setupMenu()
         setupPanicHotkey()
-        requestSystemPermissions()
-    }
-    
-    private func requestSystemPermissions() {
-        // Do not pop modal dialogs on launch.
-        // ScreenCaptureKit triggers permission on stream start.
     }
     
     private func setupStatusItem() {
@@ -41,23 +35,37 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
 
     private func setupMenu() {
         statusMenu.removeAllItems()
-        addItem("ZenDisp v1.0", action: nil, enabled: false)
-        let isAct = VirtualDisplayManager.shared.isDisplayActive
-        let statusTitle = isAct ? "Status: Active (\(VirtualDisplayManager.shared.activePreset?.name ?? "Virtual"))" : "Status: No Virtual Display"
+        addItem("ZenDisp Multi-Display", action: nil, enabled: false)
+        let count = VirtualDisplayManager.shared.activeCount
+        let statusTitle = count > 0 ? "Active Virtual Displays: \(count)" : "No Active Virtual Displays"
         addItem(statusTitle, action: nil, enabled: false)
         statusMenu.addItem(NSMenuItem.separator())
         
-        addItem("Spawn 1600x900 Display", action: #selector(spawn900p), key: "1")
-        addItem("Spawn 1920x1080 Display", action: #selector(spawn1080p), key: "2")
-        addItem("Spawn 2560x1440 Display", action: #selector(spawn1440p), key: "3")
-        addItem("Teardown Virtual Display", action: #selector(teardownActiveDisplay), key: "t", enabled: isAct)
-        statusMenu.addItem(NSMenuItem.separator())
+        for preset in PresetManager.shared.allPresets {
+            let item = NSMenuItem(title: "Spawn \(preset.name)", action: #selector(spawnPresetAction(_:)), keyEquivalent: "")
+            item.representedObject = preset
+            item.target = self
+            statusMenu.addItem(item)
+        }
         
-        let isVis = StreamWindowController.shared.isWindowVisible
-        addItem("Open PiP Viewer", action: #selector(openPiPViewer), key: "p", enabled: isAct)
-        addItem("Close PiP Viewer", action: #selector(closePiPViewer), key: "w", enabled: isVis)
-        addItem("Toggle Full-Screen Stream", action: #selector(toggleFullScreen), key: "f", enabled: isVis)
-        addItem("Release Cursor to Main Screen (⌃⎋)", action: #selector(releaseCursor), key: "\u{1b}", enabled: isAct)
+        let groups = PresetManager.shared.layoutGroups
+        if !groups.isEmpty {
+            statusMenu.addItem(NSMenuItem.separator())
+            let groupMenu = NSMenu()
+            for group in groups {
+                let gItem = NSMenuItem(title: "Launch \(group.name) (\(group.presets.count) screens)", action: #selector(launchGroupAction(_:)), keyEquivalent: "")
+                gItem.representedObject = group
+                gItem.target = self
+                groupMenu.addItem(gItem)
+            }
+            let groupParent = NSMenuItem(title: "Layout Groups", action: nil, keyEquivalent: "")
+            groupParent.submenu = groupMenu
+            statusMenu.addItem(groupParent)
+        }
+        
+        statusMenu.addItem(NSMenuItem.separator())
+        addItem("Teardown All Displays", action: #selector(teardownAllAction), key: "t", enabled: count > 0)
+        addItem("Release Cursor to Main Screen (⌃⎋)", action: #selector(releaseCursor), key: "\u{1b}", enabled: count > 0)
         statusMenu.addItem(NSMenuItem.separator())
         
         addItem("Preferences...", action: #selector(openPreferences), key: ",")
@@ -72,45 +80,24 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
         setupMenu()
     }
     
-    @objc private func spawn900p() {
-        spawnDisplay(preset: .preset900p)
-    }
-    
-    @objc private func spawn1080p() {
-        spawnDisplay(preset: .preset1080p)
-    }
-    
-    @objc private func spawn1440p() {
-        spawnDisplay(preset: .preset1440p)
-    }
-    
-    private func spawnDisplay(preset: DisplayPreset) {
-        let success = VirtualDisplayManager.shared.createDisplay(preset: preset)
-        if success, let displayID = VirtualDisplayManager.shared.activeDisplayID {
-            StreamWindowController.shared.showStream(displayID: displayID)
+    @objc private func spawnPresetAction(_ sender: NSMenuItem) {
+        if let preset = sender.representedObject as? DisplayPreset {
+            _ = VirtualDisplayManager.shared.createDisplay(preset: preset)
+            setupMenu()
         }
-        setupMenu()
     }
     
-    @objc private func teardownActiveDisplay() {
-        StreamWindowController.shared.closeStream()
-        VirtualDisplayManager.shared.teardownDisplay()
-        setupMenu()
+    @objc private func launchGroupAction(_ sender: NSMenuItem) {
+        if let group = sender.representedObject as? LayoutGroup {
+            VirtualDisplayManager.shared.launchGroup(group)
+            setupMenu()
+        }
     }
     
-    @objc private func openPiPViewer() {
-        guard let displayID = VirtualDisplayManager.shared.activeDisplayID else { return }
-        StreamWindowController.shared.showStream(displayID: displayID)
+    @objc private func teardownAllAction() {
+        VirtualDisplayManager.shared.teardownAllDisplays()
+        CursorRouter.shared.reset()
         setupMenu()
-    }
-    
-    @objc private func closePiPViewer() {
-        StreamWindowController.shared.closeStream()
-        setupMenu()
-    }
-    
-    @objc private func toggleFullScreen() {
-        StreamWindowController.shared.toggleFullScreen()
     }
     
     @objc private func checkPermissionsMenu() {
@@ -131,8 +118,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate 
 
     @objc private func panicReset() {
         CursorRouter.shared.reset()
-        StreamWindowController.shared.closeStream()
-        VirtualDisplayManager.shared.teardownDisplay()
+        VirtualDisplayManager.shared.teardownAllDisplays()
         CGDisplayRestoreColorSyncSettings()
         setupMenu()
     }

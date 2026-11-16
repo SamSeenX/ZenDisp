@@ -28,17 +28,14 @@ public final class CursorRouter {
         virtualDisplayID = nil
     }
 
-    /// Called when user clicks inside the PiP stream view.
-    /// Maps the view-local point to the virtual display global coordinate
-    /// and physically warps the cursor there. No synthetic events posted.
-    public func snapToVirtual(localPoint: CGPoint, viewSize: CGSize) {
-        guard let id = virtualDisplayID,
-              let target = mapToVirtualGlobal(local: localPoint, viewSize: viewSize, displayID: id) else { return }
-
-        // Save where we came from so the release hotkey can jump back
+    /// Called when user clicks inside a PiP stream view.
+    /// Maps the view-local point to that virtual display's global coordinate
+    /// and physically warps the cursor there.
+    public func snapToVirtual(localPoint: CGPoint, viewSize: CGSize, displayID: CGDirectDisplayID) {
+        guard let target = mapToVirtualGlobal(local: localPoint, viewSize: viewSize, displayID: displayID) else { return }
+        virtualDisplayID = displayID
         lastHostPosition = currentHostCursorPosition()
-
-        CGAssociateMouseAndMouseCursorPosition(1) // ensure association active
+        CGAssociateMouseAndMouseCursorPosition(1)
         CGWarpMouseCursorPosition(target)
         isLockedToVirtual = true
     }

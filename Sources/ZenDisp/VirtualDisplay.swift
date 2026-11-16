@@ -1,44 +1,32 @@
 import Cocoa
 import CoreGraphics
 
-public struct DisplayPreset {
-    public let width: UInt
-    public let height: UInt
-    public let refreshRate: Double
-    public let name: String
-    
-    public static let preset900p = DisplayPreset(width: 1600, height: 900, refreshRate: 60.0, name: "1600x900 (16:9)")
-    public static let preset1080p = DisplayPreset(width: 1920, height: 1080, refreshRate: 60.0, name: "1920x1080 (1080p)")
-    public static let preset1440p = DisplayPreset(width: 2560, height: 1440, refreshRate: 60.0, name: "2560x1440 (2K)")
-}
-
 public final class VirtualDisplayManager {
     public static let shared = VirtualDisplayManager()
     
-    private var activeDisplay: AnyObject?
-    public private(set) var activeDisplayID: CGDirectDisplayID?
-    public private(set) var activePreset: DisplayPreset?
+    private var activeDisplays: [CGDirectDisplayID: (display: AnyObject, preset: DisplayPreset)] = [:]
     private var serialCounter: UInt32 = 1000
     
     private init() {}
     
-    public var isDisplayActive: Bool {
-        return activeDisplay != nil && activeDisplayID != nil
+    public var activeCount: Int { activeDisplays.count }
+    public var activeDisplayIDs: [CGDirectDisplayID] { Array(activeDisplays.keys) }
+    
+    public func preset(for id: CGDirectDisplayID) -> DisplayPreset? {
+        return activeDisplays[id]?.preset
     }
     
-    public func createDisplay(preset: DisplayPreset) -> Bool {
-        teardownDisplay()
-        
+    public func createDisplay(preset: DisplayPreset) -> CGDirectDisplayID? {
         guard let descClass = NSClassFromString("CGVirtualDisplayDescriptor") as? NSObject.Type,
               let modeClass = NSClassFromString("CGVirtualDisplayMode") as? NSObject.Type,
               let settingsClass = NSClassFromString("CGVirtualDisplaySettings") as? NSObject.Type,
               let displayClass = NSClassFromString("CGVirtualDisplay") as? NSObject.Type else {
-            return false
+            return nil
         }
         
         serialCounter += 1
         let descriptor = descClass.init()
-        descriptor.setValue("ZenDisp \(preset.name)", forKey: "name")
+        descriptor.setValue("ZenDisp \(preset.name) #\(activeDisplays.count + 1)", forKey: "name")
         descriptor.setValue(UInt32(preset.width), forKey: "maxPixelsWide")
         descriptor.setValue(UInt32(preset.height), forKey: "maxPixelsHigh")
         descriptor.setValue(
@@ -50,72 +38,57 @@ public final class VirtualDisplayManager {
         descriptor.setValue(UInt32(0x5353), forKey: "vendorID")
         descriptor.setValue(DispatchQueue.main, forKey: "queue")
         
-        guard let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject? else {
-            return false
-        }
-        let modeInitSel = NSSelectorFromString("initWithWidth:height:refreshRate:")
-        guard let modeMethod = modeClass.instanceMethod(for: modeInitSel) else {
-            return false
+        guard let modeAlloc = modeClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject?,
+              let modeMethod = modeClass.instanceMethod(for: NSSelectorFromString("initWithWidth:height:refreshRate:")) else {
+            return nil
         }
         let modeInitFn = unsafeBitCast(
             modeMethod,
             to: (@convention(c) (AnyObject, Selector, UInt, UInt, Double) -> AnyObject).self
         )
-        let mode = modeInitFn(modeAlloc, modeInitSel, preset.width, preset.height, preset.refreshRate)
+        let mode = modeInitFn(modeAlloc, NSSelectorFromString("initWithWidth:height:refreshRate:"), preset.width, preset.height, preset.refreshRate)
         
         let settings = settingsClass.init()
         settings.setValue([mode], forKey: "modes")
         settings.setValue(UInt32(1), forKey: "hiDPI")
         
-        guard let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject? else {
-            return false
-        }
-        let displayInitSel = NSSelectorFromString("initWithDescriptor:")
-        guard let displayMethod = displayClass.instanceMethod(for: displayInitSel) else {
-            return false
+        guard let displayAlloc = displayClass.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue() as AnyObject?,
+              let displayMethod = displayClass.instanceMethod(for: NSSelectorFromString("initWithDescriptor:")) else {
+            return nil
         }
         let displayInitFn = unsafeBitCast(
             displayMethod,
             to: (@convention(c) (AnyObject, Selector, AnyObject) -> AnyObject).self
         )
-        let displayInstance = displayInitFn(displayAlloc, displayInitSel, descriptor)
+        let displayInstance = displayInitFn(displayAlloc, NSSelectorFromString("initWithDescriptor:"), descriptor)
         
-        let applySel = NSSelectorFromString("applySettings:")
-        guard let applyMethod = displayClass.instanceMethod(for: applySel) else {
-            return false
-        }
-        let applyFn = unsafeBitCast(
-            applyMethod,
-            to: (@convention(c) (AnyObject, Selector, AnyObject) -> Bool).self
-        )
-        let applied = applyFn(displayInstance, applySel, settings)
-        guard applied else {
-            return false
-        }
+        guard let applyMethod = displayClass.instanceMethod(for: NSSelectorFromString("applySettings:")) else { return nil }
+        let applyFn = unsafeBitCast(applyMethod, to: (@convention(c) (AnyObject, Selector, AnyObject) -> Bool).self)
+        guard applyFn(displayInstance, NSSelectorFromString("applySettings:"), settings) else { return nil }
         
-        let displayIDSel = NSSelectorFromString("displayID")
-        guard let displayIDMethod = displayClass.instanceMethod(for: displayIDSel) else {
-            return false
-        }
-        let displayIDFn = unsafeBitCast(
-            displayIDMethod,
-            to: (@convention(c) (AnyObject, Selector) -> CGDirectDisplayID).self
-        )
-        let id = displayIDFn(displayInstance, displayIDSel)
-        guard id != 0 else {
-            teardownDisplay()
-            return false
-        }
+        guard let displayIDMethod = displayClass.instanceMethod(for: NSSelectorFromString("displayID")) else { return nil }
+        let displayIDFn = unsafeBitCast(displayIDMethod, to: (@convention(c) (AnyObject, Selector) -> CGDirectDisplayID).self)
+        let id = displayIDFn(displayInstance, NSSelectorFromString("displayID"))
+        guard id != 0 else { return nil }
         
-        self.activeDisplay = displayInstance
-        self.activeDisplayID = id
-        self.activePreset = preset
-        return true
+        activeDisplays[id] = (displayInstance, preset)
+        StreamWindowManager.shared.openWindow(for: id, title: preset.name)
+        return id
     }
     
-    public func teardownDisplay() {
-        activeDisplay = nil
-        activeDisplayID = nil
-        activePreset = nil
+    public func launchGroup(_ group: LayoutGroup) {
+        for preset in group.presets {
+            _ = createDisplay(preset: preset)
+        }
+    }
+    
+    public func teardownDisplay(id: CGDirectDisplayID) {
+        StreamWindowManager.shared.closeWindow(for: id)
+        activeDisplays.removeValue(forKey: id)
+    }
+    
+    public func teardownAllDisplays() {
+        StreamWindowManager.shared.closeAllWindows()
+        activeDisplays.removeAll()
     }
 }

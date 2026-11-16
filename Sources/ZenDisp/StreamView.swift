@@ -32,7 +32,6 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
     public func startCapture(displayID: CGDirectDisplayID, completion: @escaping (Bool) -> Void) {
         stopCapture()
         targetDisplayID = displayID
-        CursorRouter.shared.configure(displayID: displayID)
 
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { [weak self] content, error in
             guard let self, let content, error == nil else {
@@ -77,23 +76,22 @@ public final class StreamView: NSView, SCStreamOutput, SCStreamDelegate {
         stream = nil
         isStreaming = false
         targetDisplayID = nil
-        CursorRouter.shared.reset()
         DispatchQueue.main.async { self.renderLayer.contents = nil }
     }
 
     // MARK: - Mouse: snap cursor to virtual display on click, leave it there
 
     public override func mouseDown(with event: NSEvent) {
-        guard targetDisplayID != nil else { super.mouseDown(with: event); return }
+        guard let id = targetDisplayID else { super.mouseDown(with: event); return }
         window?.makeFirstResponder(self)
         let pt = convert(event.locationInWindow, from: nil)
-        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size)
+        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size, displayID: id)
     }
 
     public override func rightMouseDown(with event: NSEvent) {
-        guard targetDisplayID != nil else { super.rightMouseDown(with: event); return }
+        guard let id = targetDisplayID else { super.rightMouseDown(with: event); return }
         let pt = convert(event.locationInWindow, from: nil)
-        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size)
+        CursorRouter.shared.snapToVirtual(localPoint: pt, viewSize: bounds.size, displayID: id)
     }
 
     // Scroll is forwarded synthetically since it has no position concept on warp

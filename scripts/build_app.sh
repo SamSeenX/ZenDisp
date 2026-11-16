@@ -20,6 +20,8 @@ mkdir -p "$RESOURCES_DIR"
 cp "$PROJECT_DIR/.build/release/ZenDisp" "$MACOS_DIR/ZenDisp"
 chmod +x "$MACOS_DIR/ZenDisp"
 cp "$PROJECT_DIR/Info.plist" "$CONTENTS_DIR/Info.plist"
+mkdir -p "$RESOURCES_DIR"
+cp -R "$PROJECT_DIR/Resources/"* "$RESOURCES_DIR/" 2>/dev/null || true
 
 SIGN_IDENTITY="-"
 if security find-identity -p codesigning -v | grep -q "ZenDisp Local"; then
